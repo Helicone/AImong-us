@@ -217,7 +217,7 @@ export default function Home() {
   return (
     <div className="dark:bg-black dark:text-slate-200">
       <Head>
-        <title>Dream Submarine</title>
+        <title>Valyr Chat</title>
         <meta name="description" content="AI generated stories" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -268,7 +268,7 @@ export default function Home() {
                           className="cursor-pointer"
                           onClick={() => {
                             navigator.clipboard.writeText(
-                              `https://dreamsubmarine.com?id=${chatMessage.id}`
+                              `https://chat.valyrai.com?id=${chatMessage.id}`
                             );
                           }}
                         >
@@ -277,7 +277,7 @@ export default function Home() {
                         <a
                           href={`https://twitter.com/intent/tweet?text=${
                             `My chat history with Valyr Chat! ` +
-                            "https://dreamsubmarine.com?id=" +
+                            "https://chat.valyrai.com?id=" +
                             chatMessage.id
                           }`}
                           target="_blank"
