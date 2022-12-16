@@ -95,7 +95,7 @@ export default async function handler(
             `<user>${item.input}<end-user>\n\n<response>${item.response_message}<end-response>\n\n`
         )
         .join("");
-    const context = `${ogContext}${prompt}\n\n`;
+    const context = `${ogContext}<user>${prompt}<end-user>\n\n`;
     console.log("Context", context);
     const completion = await getOpenAICompletion(context);
     console.log("Completion", completion);
