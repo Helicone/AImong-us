@@ -218,13 +218,16 @@ export default function Home() {
     <div className="dark:bg-black dark:text-slate-200">
       <Head>
         <title>Valyr Chat</title>
-        <meta name="description" content="AI generated stories" />
+        <meta name="description" content="chatGPT alternative" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       {/* Make a text box that always stays on the bottom tailwind*/}
       <main className="flex flex-col w-full flex-1 text-center min-h-screen ">
         <h1 className="fixed top-0 text-center text-4xl font-bold w-full dark:bg-black bg-white py-5 border-b">
           Valyr Chat
+          <div className="text-base font-light mt-2">
+            almost as good - always up
+          </div>
           {error && (
             <div className="text-red-500 text-sm font-bold">{error}</div>
           )}
