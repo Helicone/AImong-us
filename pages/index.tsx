@@ -339,7 +339,7 @@ export default function Home() {
             </button>
           </div>
           <div className="flex flex-row gap-5">
-            <a href="https://twitter.com/justinstorre">
+            <a href="https://twitter.com/valyr_ai">
               <i>twitter</i>
             </a>
             <a href="https://github.com/PromptZero/valyr-chat">
