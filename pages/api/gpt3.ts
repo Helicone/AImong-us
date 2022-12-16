@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { Result } from "../../lib/result";
 import { getHistory } from "./history";
 const { OPENAI_API_KEY } = process.env;
 
@@ -58,15 +59,15 @@ export async function getOpenAICompletion(
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<{
-    message: string;
-  }>
+  res: NextApiResponse<Result<string, string>>
 ) {
   const { prompt, lastId } = req.body;
+  console.log("Got request", req.body);
   if (!prompt) {
     console.log(req.body);
     res.status(400).json({
-      message: "No prompt provided",
+      error: "No prompt provided",
+      data: null,
     });
     return;
   }
@@ -74,7 +75,7 @@ export default async function handler(
   if (lastId) {
     const { error, data } = await getHistory(lastId);
     if (error !== null) {
-      res.status(400).json({ message: error });
+      res.status(400).json({ data: null, error });
       return;
     }
     const ogContext =
@@ -92,16 +93,16 @@ export default async function handler(
     const completion = await getOpenAICompletion(context);
     console.log("Completion", completion);
     if (completion) {
-      res.status(200).json({ message: completion });
+      res.status(200).json({ data: completion, error: null });
     } else {
-      res.status(500).json({ message: "Error" });
+      res.status(500).json({ error: "Error, completion failed", data: null });
     }
   } else {
     const completion = await getOpenAICompletion(getStartingPrompt(prompt));
     if (completion) {
-      res.status(200).json({ message: completion });
+      res.status(200).json({ data: completion, error: null });
     } else {
-      res.status(500).json({ message: "Error" });
+      res.status(500).json({ error: "Error, completion failed", data: null });
     }
   }
 }

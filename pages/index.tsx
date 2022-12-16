@@ -9,6 +9,7 @@ import { CiTwitter } from "react-icons/ci";
 import { BiCopy } from "react-icons/bi";
 import { BiUndo } from "react-icons/bi";
 import { useRouter } from "next/router";
+import { Result } from "../lib/result";
 
 function LoadingSpinner() {
   return (
@@ -40,6 +41,12 @@ interface IChatMessage {
   image_prompt: string | null;
 }
 
+interface IChatMessageResponse {
+  id: string;
+  request: string;
+  response: string;
+}
+
 interface IChatMessageOpenAI {
   message: string;
 }
@@ -47,8 +54,8 @@ interface IChatMessageOpenAI {
 export default function Home() {
   const router = useRouter();
   const { id } = router.query;
-  const [scene, setScene] = useState("");
-  const [chatHistory, setChatHistory] = useState<IChatMessage[]>([]);
+
+  const [chatHistory, setChatHistory] = useState<IChatMessageResponse[]>([]);
 
   const [error, setError] = useState("");
   const [chatImageLookup, setChatImageLookup] = useState<
@@ -64,64 +71,12 @@ export default function Home() {
     window.scrollTo(0, document.body.scrollHeight);
   }, [chatHistory]);
 
-  function extractImageData(prompt: string): string {
-    const imgPrompt = prompt.split("Image: ")[1].split("\n")[0] as string;
-    return imgPrompt;
-  }
-  async function getImageUrl(
-    scene: string,
-    imagePrompt: string
-  ): Promise<string> {
-    const { jobId: imageJobId } = await (
-      await fetch("/api/queueImage", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          input: {
-            prompt: `Within the world of ${scene}, ${imagePrompt}`,
-          },
-        }),
-      })
-    ).json();
-
-    let retries = 5;
-    while (retries > 0) {
-      retries--;
-      const body: { url: string } | null = await (
-        await fetch(`/api/imageResult`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            jobId: imageJobId,
-          }),
-        })
-      ).json();
-      if (body?.url) {
-        return body.url;
-      }
-      // Wait 1 second before retrying
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    return "";
-  }
-
-  function cleanUpPrompt(prompt: string, imagePrompt: string): string {
-    return prompt
-      .replace(`Image: ${imagePrompt}`, "")
-      .replace("Event: ", "")
-      .replace("\n\n", "\n")
-      .replace("\n\n", "\n");
-  }
-
   async function requestPrompt(body: {
     prompt: string;
     lastId?: string;
   }): Promise<IChatMessageOpenAI> {
-    const chatGPT3Data: IChatMessageOpenAI = await (
+    console.log("HELLO REQUESsadfdsaTIasdfdsaN");
+    const { error, data }: Result<string, string> = await (
       await fetch("/api/gpt3", {
         method: "POST",
         headers: {
@@ -130,62 +85,32 @@ export default function Home() {
         body: JSON.stringify(body),
       })
     ).json();
-    return chatGPT3Data;
+
+    if (error !== null) {
+      throw new Error(error);
+    }
+
+    return { message: data };
   }
 
-  async function setImageFor(
-    scene: string,
-    imagePrompt: string,
-    requestId: string
-  ): Promise<string> {
-    return await getImageUrl(scene, imagePrompt)
-      .then((image_url) => {
-        setChatImageLookup((prev) => ({ ...prev, [requestId]: image_url }));
-        return image_url;
-      })
-      .catch(async (err) => {
-        console.log("error getting image...retrying", err);
-        const image_url = await getImageUrl(scene, imagePrompt);
-        setChatImageLookup((prev) => ({ ...prev, [requestId]: image_url }));
-        return image_url;
-      })
-      .catch(async (err) => {
-        console.log("error getting image...retrying", err);
-        const image_url = await getImageUrl(scene, imagePrompt);
-        setChatImageLookup((prev) => ({ ...prev, [requestId]: image_url }));
-        return image_url;
-      })
-      .catch(async (err) => {
-        console.log("error getting image... I give up", err);
-        return "";
-      });
-  }
-
-  async function logCurrentSpot(
-    {
-      requestId,
-      currentInput,
-      imageUrl,
-      imagePrompt,
-      messageWithoutImage,
-      rootId,
-    }: {
-      requestId: string;
-      currentInput: string;
-      imageUrl: string;
-      imagePrompt: string;
-      messageWithoutImage: string;
-      rootId: string;
-    },
-    chatGPT3Data: IChatMessageOpenAI
-  ) {
+  async function logCurrentSpot({
+    requestId,
+    currentInput,
+    responseMessage,
+    rootId,
+  }: {
+    requestId: string;
+    currentInput: string;
+    responseMessage: string;
+    rootId: string;
+  }) {
     const body: promptsDB = {
       id: requestId,
       input: currentInput,
-      image_url: imageUrl,
-      image_prompt: imagePrompt,
-      response_without_image: messageWithoutImage,
-      response_message: chatGPT3Data.message,
+      image_url: "No image",
+      image_prompt: "No image",
+      response_without_image: "N/A",
+      response_message: responseMessage,
       last_id:
         chatHistory.length === 0
           ? null
@@ -203,67 +128,32 @@ export default function Home() {
   }
 
   async function getResponse(onLogComplete: () => void): Promise<void> {
-    if (chatHistory.length <= 0) {
-      alert("AH! Something went wrong. Please refresh the page.");
-      throw new Error("No chat history - this should not be possible");
-      return;
-    }
-
     const requestId = uuidv4();
+    const lastId =
+      chatHistory.length === 0
+        ? undefined
+        : chatHistory[chatHistory.length - 1].id;
+    const rootId = chatHistory.length === 0 ? requestId : chatHistory[0].id;
     const chatGPT3Data = await requestPrompt({
       prompt: currentInput,
-      lastId: chatHistory[chatHistory.length - 1].id,
+      lastId,
     });
-
-    const displayedMessage = `${chatGPT3Data.message}`;
 
     setChatHistory((prev) => [
       ...prev,
       {
-        ...chatGPT3Data,
-        message: displayedMessage,
-        image_prompt: "No image",
+        request: currentInput,
+        response: chatGPT3Data.message,
         id: requestId,
-        image_url: null,
       },
     ]);
 
-    logCurrentSpot(
-      {
-        requestId,
-        currentInput,
-        imageUrl: "none",
-        imagePrompt: "No image",
-        messageWithoutImage: displayedMessage,
-        rootId: chatHistory[0].id,
-      },
-      chatGPT3Data
-    );
-    onLogComplete();
-  }
-  async function getInitialResponse(onLogComplete: () => void): Promise<void> {
-    const requestId = uuidv4();
-    const chatGPT3Data = await requestPrompt({
-      prompt: currentInput,
+    logCurrentSpot({
+      requestId,
+      currentInput,
+      responseMessage: chatGPT3Data.message,
+      rootId,
     });
-    setChatHistory([
-      {
-        message: `${chatGPT3Data.message}`,
-        image_prompt: "no image",
-        id: requestId,
-      },
-    ]);
-    logCurrentSpot(
-      {
-        requestId,
-        currentInput,
-        imageUrl: "none",
-        imagePrompt: "No image",
-        messageWithoutImage: chatGPT3Data.message,
-        rootId: requestId,
-      },
-      chatGPT3Data
-    );
     onLogComplete();
   }
 
@@ -271,27 +161,11 @@ export default function Home() {
     setError("");
     setIsLoading(true);
     setCurrentInput("");
-    if (scene === "") {
-      setScene(currentInput);
-
-      getInitialResponse(() => setIsLoading(false)).catch((e) => {
-        setIsLoading(false);
-        console.log("error", e);
-        setError(
-          "Error getting response.. Please note, " +
-            "GPT3 is a bit buggy, maybe just try again in a minute?"
-        );
-      });
-    } else {
-      getResponse(() => setIsLoading(false)).catch((e) => {
-        setIsLoading(false);
-        console.log("error", e);
-        setError(
-          "Error getting response.. Please note, " +
-            "GPT3 is a bit buggy, maybe just try again in a minute?"
-        );
-      });
-    }
+    getResponse(() => setIsLoading(false)).catch((e) => {
+      setIsLoading(false);
+      console.log("error", e);
+      setError(`Error getting: ${JSON.stringify(e)}`);
+    });
   }
 
   if (id) {
@@ -299,12 +173,11 @@ export default function Home() {
     fetch("/api/history?id=" + id)
       .then((res) => res.json())
       .then((data: promptsDB[]) => {
-        setScene(data[0].input);
         setChatHistory(
           data.map((item) => ({
             id: item.id,
-            message: item.response_without_image,
-            image_prompt: item.image_prompt,
+            request: item.input,
+            response: item.response_message,
           }))
         );
         setChatImageLookup(
@@ -349,23 +222,9 @@ export default function Home() {
       {/* Make a text box that always stays on the bottom tailwind*/}
       <main className="flex flex-col w-full flex-1 text-center min-h-screen ">
         <h1 className="fixed top-0 text-center text-4xl font-bold w-full dark:bg-black bg-white py-5 border-b">
-          {scene !== "" ? (
-            <div className="flex flex-col w-full">
-              <div className="flex flex-row justify-between px-5 items-center">
-                <div>{`Welcome to ${scene}`}</div>
-                <button
-                  className="text-sm border p-3"
-                  onClick={() => {
-                    router.reload();
-                  }}
-                >
-                  New game
-                </button>
-              </div>
-              <i className="text-red-500 text-xs">{error}</i>
-            </div>
-          ) : (
-            "Dream Submarine"
+          Valyr Chat
+          {error && (
+            <div className="text-red-500 text-sm font-bold">{error}</div>
           )}
         </h1>
         <div className="flex flex-col-reverse w-full flex-1 text-center my-40 overflow-auto gap-5 justify-center items-center">
@@ -377,7 +236,7 @@ export default function Home() {
                 key={chatMessage.id}
                 className="flex flex-col w-5/6 whitespace-pre-wrap text-left border-2 p-5 justify-center items-center"
               >
-                <p>{chatMessage.message}</p>
+                <p>{chatMessage.response}</p>
                 <div className="flex flex-row justify-end items-end w-full">
                   {loggedInDB[chatMessage.id] ? (
                     <div className="flex flex-row w-full justify-end mt-2">
@@ -394,7 +253,7 @@ export default function Home() {
                         </div>
                         <a
                           href={`https://twitter.com/intent/tweet?text=${
-                            `My new story about ${scene}! ` +
+                            `My chat history with Valyr Chat! ` +
                             "https://dreamsubmarine.com?id=" +
                             chatMessage.id
                           }`}
@@ -418,7 +277,7 @@ export default function Home() {
               disabled={isLoading}
               className="w-1/2 h-30 border-2 bg-transparent px-2 border-black dark:border-slate-200 resize-none"
               placeholder={
-                scene === ""
+                chatHistory.length === 0
                   ? "Enter the scene you want your story to take place. Ex (Harry Potter, Pokemon, My Neighbor Totoro) "
                   : isLoading
                   ? "Loading... this might take a while... (up to 2 minutes)"
