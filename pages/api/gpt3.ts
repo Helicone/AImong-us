@@ -34,7 +34,7 @@ export async function getOpenAICompletion(
       "User-ID": "1",
     },
     body: JSON.stringify({
-      prompt: `\n<user>${prompt}<end-user>`,
+      prompt: `${prompt}`,
       max_tokens: 1024,
       temperature: 0.7,
       frequency_penalty: 1.0,
@@ -90,7 +90,10 @@ export default async function handler(
         .reverse()
         .slice(0, 10)
         .reverse()
-        .map((item) => `${item.input}\n\n${item.response_message}\n\n`)
+        .map(
+          (item) =>
+            `<user>${item.input}<end-user>\n\n<response>${item.response_message}<end-response>\n\n`
+        )
         .join("");
     const context = `${ogContext}${prompt}\n\n`;
     console.log("Context", context);
