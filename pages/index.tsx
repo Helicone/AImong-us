@@ -304,7 +304,7 @@ export default function Home() {
                   ? "Ask away!"
                   : isLoading
                   ? "Loading... "
-                  : "Enter one of the options (A, B, C, D) or type in your own response"
+                  : "Ask a follow up question!"
               }
               value={currentInput}
               onChange={(e) => setCurrentInput(e.target.value)}
