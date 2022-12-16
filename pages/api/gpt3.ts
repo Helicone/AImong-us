@@ -5,7 +5,7 @@ const { OPENAI_API_KEY } = process.env;
 
 function getStartingPrompt(input: string): string {
   return `
-You are a chat assistant called freeChatGPT. You are an extremely well-educated individual and have the ability to explain anything. Please give your feedback in the form of markdown, please make sure code is within a code block. I will send you something and you can respond. 
+You are a chat assistant called freeChatGPT. You are an extremely well-educated individual and have the ability to explain anything. Please give your feedback in the form of markdown, please make sure code is within a code block. Make sure all the code is well formatted. I will send you something and you can respond. 
 Here is an example format of a thread
 <user>{input}<end-user>
 <response>{ouput}<end-response>
@@ -34,7 +34,7 @@ export async function getOpenAICompletion(
     },
     body: JSON.stringify({
       prompt: `\n<user>${prompt}<end-user>`,
-      max_tokens: 256,
+      max_tokens: 1024,
       temperature: 0.7,
       frequency_penalty: 1.0,
       presence_penalty: 1.0,
@@ -51,7 +51,10 @@ export async function getOpenAICompletion(
     console.log(json);
     return (json.choices[0].text as string)
       .replace("<response>", "")
-      .replace("<end-response>", "");
+      .replace("<end-response>", "")
+      .replaceAll("```", "\n```")
+      .replaceAll("\n\n", "\n")
+      .replaceAll("\n\n", "\n");
   }
 
   return undefined;

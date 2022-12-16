@@ -10,6 +10,8 @@ import { BiCopy } from "react-icons/bi";
 import { BiUndo } from "react-icons/bi";
 import { useRouter } from "next/router";
 import { Result } from "../lib/result";
+import ReactMarkdown from "react-markdown";
+import SyntaxHighlighter from "react-syntax-highlighter";
 
 function LoadingSpinner() {
   return (
@@ -236,7 +238,28 @@ export default function Home() {
                 key={chatMessage.id}
                 className="flex flex-col w-5/6 whitespace-pre-wrap text-left border-2 p-5 justify-center items-center"
               >
-                <p>{chatMessage.response}</p>
+                <div className="overflow-auto w-full flex flex-col gap-5">
+                  <div className="border-b pb-3">{chatMessage.request}</div>
+                  <ReactMarkdown
+                    components={{
+                      code({ node, inline, className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || "");
+                        return !inline && match ? (
+                          <SyntaxHighlighter language={match[1]}>
+                            {children as string}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className="bg-slate-400" {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                    }}
+                  >
+                    {chatMessage.response}
+                  </ReactMarkdown>
+                </div>
+
                 <div className="flex flex-row justify-end items-end w-full">
                   {loggedInDB[chatMessage.id] ? (
                     <div className="flex flex-row w-full justify-end mt-2">
@@ -278,9 +301,9 @@ export default function Home() {
               className="w-1/2 h-30 border-2 bg-transparent px-2 border-black dark:border-slate-200 resize-none"
               placeholder={
                 chatHistory.length === 0
-                  ? "Enter the scene you want your story to take place. Ex (Harry Potter, Pokemon, My Neighbor Totoro) "
+                  ? "Ask away!"
                   : isLoading
-                  ? "Loading... this might take a while... (up to 2 minutes)"
+                  ? "Loading... "
                   : "Enter one of the options (A, B, C, D) or type in your own response"
               }
               value={currentInput}
@@ -319,10 +342,10 @@ export default function Home() {
             <a href="https://twitter.com/justinstorre">
               <i>twitter</i>
             </a>
-            <a href="https://github.com/chitalian/dreamsubmarine">
+            <a href="https://github.com/PromptZero/valyr-chat">
               <i>github</i>
             </a>
-            <a href="https://discord.gg/E4mFcpneUd">
+            <a href="https://discord.gg/2TkeWdXNPQ">
               <i>discord</i>
             </a>
           </div>
