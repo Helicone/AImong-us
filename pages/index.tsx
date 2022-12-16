@@ -41,8 +41,6 @@ interface IChatMessage {
 }
 
 interface IChatMessageOpenAI {
-  parent_id: string | null;
-  conversation_id: string;
   message: string;
 }
 
@@ -122,7 +120,7 @@ export default function Home() {
   async function requestPrompt(body: {
     prompt: string;
     lastId?: string;
-  }): Promise<[IChatMessageOpenAI, string, string]> {
+  }): Promise<IChatMessageOpenAI> {
     const chatGPT3Data: IChatMessageOpenAI = await (
       await fetch("/api/gpt3", {
         method: "POST",
@@ -132,14 +130,7 @@ export default function Home() {
         body: JSON.stringify(body),
       })
     ).json();
-    console.log("chatGPT3Data", chatGPT3Data);
-
-    const imagePrompt = extractImageData(chatGPT3Data.message);
-    const messageWithoutImage = cleanUpPrompt(
-      chatGPT3Data.message,
-      imagePrompt
-    );
-    return [chatGPT3Data, imagePrompt, messageWithoutImage];
+    return chatGPT3Data;
   }
 
   async function setImageFor(
@@ -219,76 +210,61 @@ export default function Home() {
     }
 
     const requestId = uuidv4();
-    const [chatGPT3Data, imagePrompt, messageWithoutImage] =
-      await requestPrompt({
-        prompt: currentInput,
-        lastId: chatHistory[chatHistory.length - 1].id,
-      });
+    const chatGPT3Data = await requestPrompt({
+      prompt: currentInput,
+      lastId: chatHistory[chatHistory.length - 1].id,
+    });
 
-    const displayedMessage = `You have choose "${currentInput}"\n\n${messageWithoutImage}`;
+    const displayedMessage = `${chatGPT3Data.message}`;
 
     setChatHistory((prev) => [
       ...prev,
       {
         ...chatGPT3Data,
         message: displayedMessage,
-        image_prompt: imagePrompt,
+        image_prompt: "No image",
         id: requestId,
         image_url: null,
       },
     ]);
 
-    setImageFor(scene, imagePrompt, requestId)
-      .then((imageUrl) => {
-        logCurrentSpot(
-          {
-            requestId,
-            currentInput,
-            imageUrl,
-            imagePrompt,
-            messageWithoutImage: displayedMessage,
-            rootId: chatHistory[0].id,
-          },
-          chatGPT3Data
-        );
-        onLogComplete();
-      })
-      .catch((e) => {
-        onLogComplete();
-      });
+    logCurrentSpot(
+      {
+        requestId,
+        currentInput,
+        imageUrl: "none",
+        imagePrompt: "No image",
+        messageWithoutImage: displayedMessage,
+        rootId: chatHistory[0].id,
+      },
+      chatGPT3Data
+    );
+    onLogComplete();
   }
   async function getInitialResponse(onLogComplete: () => void): Promise<void> {
     const requestId = uuidv4();
-    const [chatGPT3Data, imagePrompt, messageWithoutImage] =
-      await requestPrompt({
-        prompt: currentInput,
-      });
+    const chatGPT3Data = await requestPrompt({
+      prompt: currentInput,
+    });
     setChatHistory([
       {
-        ...chatGPT3Data,
-        message: `${messageWithoutImage}`,
-        image_prompt: imagePrompt,
+        message: `${chatGPT3Data.message}`,
+        image_prompt: "no image",
         id: requestId,
       },
     ]);
-    setImageFor(currentInput, imagePrompt, requestId)
-      .then((imageUrl) => {
-        logCurrentSpot(
-          {
-            requestId,
-            currentInput,
-            imageUrl,
-            imagePrompt,
-            messageWithoutImage,
-            rootId: requestId,
-          },
-          chatGPT3Data
-        );
-        onLogComplete();
-      })
-      .catch((e) => {
-        onLogComplete();
-      });
+    logCurrentSpot(
+      {
+        requestId,
+        currentInput,
+        imageUrl: "none",
+        imagePrompt: "No image",
+        messageWithoutImage: chatGPT3Data.message,
+        rootId: requestId,
+      },
+      chatGPT3Data
+    );
+    onLogComplete();
   }
 
   function submitRequestToBackend() {
@@ -401,22 +377,6 @@ export default function Home() {
                 key={chatMessage.id}
                 className="flex flex-col w-5/6 whitespace-pre-wrap text-left border-2 p-5 justify-center items-center"
               >
-                {chatImageLookup[chatMessage.id] === null ||
-                chatImageLookup[chatMessage.id] === "" ||
-                chatImageLookup[chatMessage.id] === undefined ? (
-                  <div className="h-[500px] w-[500px] flex flex-col justify-center items-center">
-                    <LoadingSpinner />
-                  </div>
-                ) : (
-                  <img
-                    src={chatImageLookup[chatMessage.id]}
-                    width={500}
-                    height={500}
-                    alt={chatMessage.image_prompt ?? ""}
-                  />
-                )}
-                <i className="text-xs my-2">{chatMessage.image_prompt}</i>
-
                 <p>{chatMessage.message}</p>
                 <div className="flex flex-row justify-end items-end w-full">
                   {loggedInDB[chatMessage.id] ? (

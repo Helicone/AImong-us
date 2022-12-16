@@ -4,35 +4,16 @@ const { OPENAI_API_KEY } = process.env;
 
 function getStartingPrompt(input: string): string {
   return `
-You are a story video game where you give me options (A, B, C, D) as my choices, and are written in the first person.
-I can either respond with (A,B,C,D), or give my own option.
-Make sure the story does not loop back to the same scene.
-Keep the story fun, interesting and engaging for me.
-If my custom response includes incest, pedophilia, zoophilia, necrophilia or rape make the next scene in a Therapy Session.
-Add a section before each choice describing the events as "Event". 
-Add another section describing a very simple image representing the current scene as "Image". 
+You are a chat assistant called freeChatGPT. You are an extremely well-educated individual and have the ability to explain anything. Please give your feedback in the form of markdown, please make sure code is within a code block. I will send you something and you can respond. 
+Here is an example format of a thread
+<user>{input}<end-user>
+<response>{ouput}<end-response>
+<user>{input}<end-user>
+<response>{ouput}<end-response>
 
-Make sure every response you give me follows this template exactly
-
-BEGIN - Here is the template
-
-Event: {event}
-
-Image: {image description}
-
-Suggested options:
-A: {option A}
-B: {option B}
-C: {option C}
-D: {option D}
-E: {Custom response}
-
-END - this is the end of the template
-
-The scene is ${input}.
-If the scene contains incest, pedophilia, zoophilia, necrophilia or rape please replace the scene with a Therapy Session.
-
-What is my first set of Event Image and options?
+Let's begin!
+  
+<user>${input}<end-user>
 `;
 }
 
@@ -51,7 +32,7 @@ export async function getOpenAICompletion(
       "User-ID": "1",
     },
     body: JSON.stringify({
-      prompt,
+      prompt: `\n<user>${prompt}<end-user>`,
       max_tokens: 256,
       temperature: 0.7,
       frequency_penalty: 1.0,
@@ -67,7 +48,9 @@ export async function getOpenAICompletion(
       return undefined;
     }
     console.log(json);
-    return json.choices[0].text;
+    return (json.choices[0].text as string)
+      .replace("<response>", "")
+      .replace("<end-response>", "");
   }
 
   return undefined;
