@@ -60,9 +60,6 @@ export default function Home() {
   const [chatHistory, setChatHistory] = useState<IChatMessageResponse[]>([]);
 
   const [error, setError] = useState("");
-  const [chatImageLookup, setChatImageLookup] = useState<
-    Record<string, string>
-  >({});
 
   const [loggedInDB, setLoggedInDb] = useState<Record<string, boolean>>({});
   const [currentInput, setCurrentInput] = useState("");
@@ -93,6 +90,11 @@ export default function Home() {
     }
 
     return { message: data };
+  }
+
+  function clear() {
+    setChatHistory([]);
+    setLoggedInDb({});
   }
 
   async function logCurrentSpot({
@@ -176,7 +178,6 @@ export default function Home() {
   }
 
   if (id && chatHistory.length === 0) {
-    localStorage.clear();
     fetch("/api/history?id=" + id)
       .then((res) => res.json())
       .then((data: promptsDB[]) => {
@@ -186,12 +187,6 @@ export default function Home() {
             request: item.input,
             response: item.response_message,
           }))
-        );
-        setChatImageLookup(
-          data.reduce((acc, item) => {
-            acc[item.id] = item.image_url;
-            return acc;
-          }, {} as { [key: string]: string })
         );
         setLoggedInDb(
           data.reduce((acc, item) => {
@@ -226,14 +221,32 @@ export default function Home() {
       </Head>
       {/* Make a text box that always stays on the bottom tailwind*/}
       <main className="flex flex-col w-full flex-1 text-center min-h-screen ">
-        <h1 className="fixed top-0 text-center text-4xl font-bold w-full dark:bg-black bg-white py-5 border-b">
-          Valyr Chat
-          <div className="text-base font-light mt-2">
-            almost as good - always up
+        <h1 className="fixed top-0 text-center text-4xl font-bold w-full dark:bg-black bg-white py-5 border-b px-5">
+          <div className="">
+            <div className="flex  md:flex-row w-full justify-between items-center">
+              <div className="text-left">
+                Valyr Chat
+                <div className="text-base font-light mt-2">
+                  almost as good - always up
+                </div>
+              </div>
+              <div
+                className="border p-3 text-base"
+                onClick={() => {
+                  router.push("/", undefined, { shallow: true }).then(() => {
+                    clear();
+                  });
+                }}
+              >
+                Start over
+              </div>
+            </div>
+            {error && (
+              <div className="text-red-500 text-sm font-bold">
+                {error}My error
+              </div>
+            )}
           </div>
-          {error && (
-            <div className="text-red-500 text-sm font-bold">{error}</div>
-          )}
         </h1>
         <div className="flex flex-col-reverse w-full flex-1 text-center my-40 overflow-auto gap-5 justify-center items-center">
           {chatHistory
