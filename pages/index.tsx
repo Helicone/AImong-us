@@ -231,7 +231,7 @@ export default function Home() {
                 </div>
               </div>
               <div
-                className="border p-3 text-base"
+                className="border p-3 text-base hover:cursor-pointer"
                 onClick={() => {
                   router.push("/", undefined, { shallow: true }).then(() => {
                     clear();
