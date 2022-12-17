@@ -129,7 +129,9 @@ export default function Home() {
     setLoggedInDb((prev) => ({ ...prev, [requestId]: true }));
   }
 
-  async function getResponse(onLogComplete: () => void): Promise<void> {
+  async function getResponse(
+    onLogComplete: (id: string) => void
+  ): Promise<void> {
     const requestId = uuidv4();
     const lastId =
       chatHistory.length === 0
@@ -156,21 +158,24 @@ export default function Home() {
       responseMessage: chatGPT3Data.message,
       rootId,
     });
-    onLogComplete();
+    onLogComplete(requestId);
   }
 
   function submitRequestToBackend() {
     setError("");
     setIsLoading(true);
     setCurrentInput("");
-    getResponse(() => setIsLoading(false)).catch((e) => {
+    getResponse((id) => {
+      router.push(`/?id=${id}`, undefined, { shallow: true });
+      setIsLoading(false);
+    }).catch((e) => {
       setIsLoading(false);
       console.log("error", e);
       setError(`Error getting: ${JSON.stringify(e)}`);
     });
   }
 
-  if (id) {
+  if (id && chatHistory.length === 0) {
     localStorage.clear();
     fetch("/api/history?id=" + id)
       .then((res) => res.json())
@@ -194,8 +199,6 @@ export default function Home() {
             return acc;
           }, {} as { [key: string]: boolean })
         );
-        router.push("/", undefined, { shallow: true });
-
         console.log(data);
       });
 
