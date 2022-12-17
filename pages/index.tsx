@@ -216,7 +216,14 @@ export default function Home() {
     <div className="dark:bg-black dark:text-slate-200">
       <Head>
         <title>Valyr Chat</title>
-        <meta name="description" content="chatGPT alternative" />
+        <meta
+          name="description"
+          content={
+            chatHistory.length === 0
+              ? "chatGPT alternative"
+              : chatHistory[0].request
+          }
+        />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       {/* Make a text box that always stays on the bottom tailwind*/}
