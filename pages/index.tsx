@@ -247,14 +247,28 @@ export default function Home() {
                     components={{
                       code({ node, inline, className, children, ...props }) {
                         const match = /language-(\w+)/.exec(className || "");
-                        return !inline && match ? (
-                          <SyntaxHighlighter language={match[1]}>
-                            {children as string}
-                          </SyntaxHighlighter>
-                        ) : (
-                          <code className="bg-slate-400" {...props}>
-                            {children}
-                          </code>
+                        return (
+                          <div className="pb-5 flex flex-col gap-3">
+                            <div
+                              className="w-full text-right hover:cursor-pointer"
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  children as string
+                                );
+                              }}
+                            >
+                              copy
+                            </div>
+                            {!inline && match ? (
+                              <SyntaxHighlighter language={match[1]}>
+                                {children as string}
+                              </SyntaxHighlighter>
+                            ) : (
+                              <div className="p-5  border border-slate-500">
+                                <code {...props}>{children}</code>
+                              </div>
+                            )}
+                          </div>
                         );
                       },
                     }}
