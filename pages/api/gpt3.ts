@@ -42,6 +42,7 @@ export async function getOpenAICompletion(
       frequency_penalty: 1.0,
       presence_penalty: 1.0,
       logprobs: 1,
+      stop: "<end-response>",
     }),
   });
 
