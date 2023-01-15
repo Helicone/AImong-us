@@ -233,8 +233,27 @@ export default function Home() {
             <div className="flex  md:flex-row w-full justify-between items-center">
               <div className="text-left">
                 Valyr Chat
-                <div className="text-base font-light mt-2">
-                  almost as good - always up
+                <div className="text-base font-light mt-2 text-red-400 flex flex-row gap-1">
+                  <div>
+                    {
+                      "We love that you all love Valyr Chat so much! We're shutting down for now"
+                    }
+                  </div>
+                  <div className="font-bold">{"temporarily."}</div>
+                  <div>{"Thanks for all the support! "}</div>
+                </div>
+                <div className="text-base font-light mt-2 text-red-400">
+                  {
+                    "Please follow us on Discord for more updates. In the meantime, please fill out this survey: "
+                  }
+                  <a
+                    href="https://forms.gle/kev2tRJB9cj1DVy78"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-500"
+                  >
+                    https://forms.gle/kev2tRJB9cj1DVy78
+                  </a>
                 </div>
               </div>
               <div
