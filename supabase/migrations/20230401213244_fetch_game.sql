@@ -3,16 +3,15 @@
 -- and may require manual changes to the script to ensure changes are applied in the correct order.
 -- Please report an issue for any failure with the reproduction steps.
 
-DROP FUNCTION IF EXISTS public.find_or_create_active_game(p_user uuid);
-
-CREATE OR REPLACE FUNCTION public.find_or_create_active_game(IN p_user uuid)
-    RETURNS TABLE(game_id uuid, player_count integer, game_state text)
+CREATE OR REPLACE FUNCTION public.find_or_create_active_game(
+	p_user uuid,
+	p_num_players integer)
+    RETURNS TABLE(game_id uuid, player_count integer, game_state text) 
     LANGUAGE 'plpgsql'
-    VOLATILE
-    PARALLEL UNSAFE
     COST 100
+    VOLATILE PARALLEL UNSAFE
     ROWS 1000
-    
+
 AS $BODY$
 DECLARE
     active_game_id uuid;
@@ -26,13 +25,13 @@ BEGIN
 
     -- If the user is not in an active game, find or create one
     IF active_game_id IS NULL THEN
-        -- Try to find a game with status 'finding_players' and less than 5 players
+        -- Try to find a game with status 'finding_players' and less than p_num_players players
         SELECT g.id, g.status, COUNT(pg.player) INTO active_game_id, game_status, player_count
         FROM public.games AS g
         JOIN public.player_games AS pg ON g.id = pg.game
         WHERE g.status = 'finding_players'
         GROUP BY g.id, g.status
-        HAVING COUNT(pg.player) < 5
+        HAVING COUNT(pg.player) < p_num_players
         LIMIT 1;
 
         -- If no game is found, create a new one with status 'finding_players'
@@ -55,8 +54,8 @@ BEGIN
         FROM public.player_games
         WHERE game = active_game_id;
 
-        -- Set the game status to 'active' if there are 5 players
-        IF player_count = 5 THEN
+        -- Set the game status to 'active' if there are p_num_players players
+        IF player_count = p_num_players THEN
             UPDATE public.games
             SET status = 'active'
             WHERE id = active_game_id;
@@ -76,20 +75,16 @@ BEGIN
 END;
 $BODY$;
 
-REVOKE ALL ON TABLE public.answers FROM anon;
-REVOKE ALL ON TABLE public.answers FROM postgres;
-REVOKE ALL ON TABLE public.answers FROM service_role;
-GRANT ALL ON TABLE public.answers TO anon;
+ALTER FUNCTION public.find_or_create_active_game(uuid, integer)
+    OWNER TO postgres;
 
-GRANT ALL ON TABLE public.answers TO service_role;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO PUBLIC;
 
-GRANT ALL ON TABLE public.answers TO postgres;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO anon;
 
-REVOKE ALL ON TABLE public.player_games FROM anon;
-REVOKE ALL ON TABLE public.player_games FROM postgres;
-REVOKE ALL ON TABLE public.player_games FROM service_role;
-GRANT ALL ON TABLE public.player_games TO anon;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO authenticated;
 
-GRANT ALL ON TABLE public.player_games TO service_role;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO postgres;
 
-GRANT ALL ON TABLE public.player_games TO postgres;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO service_role;
+
