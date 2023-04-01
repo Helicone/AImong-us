@@ -16,7 +16,7 @@ import { useUser } from "@supabase/auth-helpers-react";
 import TuringChat from "../components/games/turingChat/turingChat";
 import { MainWrapper } from "../components/mainWrapper";
 import LoggedOutFlow from "../components/loggedOutFlow";
-import LoggedInFlow from "../components/LoggedinFlow";
+import LoggedInFlow from "../components/loggedInFlow";
 
 function LoadingSpinner() {
   return (
@@ -61,7 +61,7 @@ interface IChatMessageOpenAI {
 export default function Home() {
   const user = useUser();
   return (
-    <div className="dark:bg-black dark:text-slate-200">
+    <div>
       <Head>
         <title>AI Turing Chat</title>
         <meta name="description" content={"ARE YOU SMARTER THAN A BOT"} />
