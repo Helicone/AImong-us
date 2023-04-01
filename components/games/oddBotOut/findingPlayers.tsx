@@ -12,7 +12,6 @@ export default function FindingPlayers(props: FindingPlayersProps) {
         <div>{game?.game_state}</div>
         <div>
           {game?.player_count} / {NUM_PLAYERS} Players Joined
-          {game?.questions.length}
         </div>
       </div>
     </div>

@@ -12,11 +12,15 @@ export default function ActiveGame(props: ActiveGameProps) {
 
   const currentQuestion = game.questions[0];
 
-  const timeLeft = TOTAL_TIME_TO_ANSWER_QUESTION - (Date.now() - game);
+  const timeLeft =
+    TOTAL_TIME_TO_ANSWER_QUESTION -
+    (Date.now() - new Date(currentQuestion.created_at!).getTime());
+
   return (
     <div>
       <div>
         <div>{game?.game_state}</div>
+        {timeLeft}
         <div>
           {game?.player_count} / {NUM_PLAYERS} Players Joined
           {game?.questions[0].question}
