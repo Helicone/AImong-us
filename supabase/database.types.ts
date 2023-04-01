@@ -86,18 +86,42 @@ export interface Database {
           created_at?: string | null
         }
       }
+      votes: {
+        Row: {
+          question: number
+          created_at: string | null
+          player: string
+          answer: number
+        }
+        Insert: {
+          question?: number
+          created_at?: string | null
+          player: string
+          answer: number
+        }
+        Update: {
+          question?: number
+          created_at?: string | null
+          player?: string
+          answer?: number
+        }
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      add_question_to_game: {
-        Args: { p_game_id: string; p_question_text: string }
-        Returns: unknown
-      }
       find_or_create_active_game: {
         Args: { p_user: string }
-        Returns: { game_id: string; player_count: number }[]
+        Returns: { game_id: string; player_count: number; game_state: string }[]
+      }
+      submit_answer: {
+        Args: {
+          p_user_id: string
+          p_question_id: number
+          p_answer_text: string
+        }
+        Returns: unknown
       }
     }
     Enums: {

@@ -9,14 +9,6 @@ async function getQuestions(gameId: string) {
     .filter("game", "eq", gameId);
 }
 
-const listOfQuestions = [
-  "What is your favorite color?",
-  "What is your favorite food?",
-  "What is your favorite animal?",
-  "What is your favorite movie?",
-  "What is your favorite song?",
-];
-
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
 export type Questions = UnwrapPromise<ReturnType<typeof getQuestions>>;
 export default async function handler(

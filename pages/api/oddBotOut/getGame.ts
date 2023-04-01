@@ -21,10 +21,10 @@ const listOfQuestions = [
 
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
 type ActiveGameType = ReturnType<typeof getActiveGame>;
-export type GameResponse = UnwrapPromise<ActiveGameType> | undefined;
+export type GameResponse = UnwrapPromise<ActiveGameType>["data"] | undefined;
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<string | undefined>
+  res: NextApiResponse<GameResponse>
 ) {
   const supabase = createServerSupabaseClient({ req, res });
   const user = await supabase.auth.getUser();
@@ -34,6 +34,7 @@ export default async function handler(
     return;
   }
   const { data: game, error } = await getActiveGame(userId);
+
   if (error !== null) {
     res.status(404).json(undefined);
     return;
@@ -49,5 +50,5 @@ export default async function handler(
       return;
     }
   }
-  res.status(200).json(game.game_id);
+  res.status(200).json(game);
 }
