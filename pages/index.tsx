@@ -14,7 +14,9 @@ export default function Home() {
         <meta name="description" content={"ARE YOU SMARTER THAN A BOT"} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <MainWrapper>{user ? <LoggedInFlow /> : <LoggedOutFlow />}</MainWrapper>
+      <MainWrapper title="GPT-4 & Friends">
+        {user ? <LoggedInFlow /> : <LoggedOutFlow />}
+      </MainWrapper>
     </div>
   );
 }

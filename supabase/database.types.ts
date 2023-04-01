@@ -111,10 +111,23 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      find_or_create_active_game: {
-        Args: { p_user: string }
-        Returns: { game_id: string; player_count: number; game_state: string }[]
-      }
+      find_or_create_active_game:
+        | {
+            Args: { p_user: string }
+            Returns: {
+              game_id: string
+              player_count: number
+              game_state: string
+            }[]
+          }
+        | {
+            Args: { p_user: string; p_num_players: number }
+            Returns: {
+              game_id: string
+              player_count: number
+              game_state: string
+            }[]
+          }
       submit_answer: {
         Args: {
           p_user_id: string

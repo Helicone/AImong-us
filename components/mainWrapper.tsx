@@ -1,10 +1,16 @@
-export function MainWrapper({ children }: { children: React.ReactNode }) {
+interface MainWrapperProps {
+  children: React.ReactNode;
+  title: string;
+}
+
+export function MainWrapper(props: MainWrapperProps) {
+  const { children, title } = props;
   return (
     <main className="flex flex-col w-full flex-1 text-center min-h-screen justify-between">
       <h1 className="text-center text-4xl font-bold w-full bg-white py-5 border-b px-5">
         <div className="">
           <div className="flex  md:flex-row w-full justify-between items-center">
-            <div className="text-center w-full">GPT-4 & Friends</div>
+            <div className="text-center w-full">{title}</div>
           </div>
         </div>
       </h1>
