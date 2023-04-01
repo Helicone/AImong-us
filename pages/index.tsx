@@ -13,9 +13,10 @@ import { Result } from "../lib/result";
 import ReactMarkdown from "react-markdown";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { useUser } from "@supabase/auth-helpers-react";
-import LoggedInFlow from "../components/loggedInFlow";
+import TuringChat from "../components/games/turingChat/turingChat";
 import { MainWrapper } from "../components/mainWrapper";
 import LoggedOutFlow from "../components/loggedOutFlow";
+import LoggedInFlow from "../components/LoggedinFlow";
 
 function LoadingSpinner() {
   return (
@@ -63,14 +64,7 @@ export default function Home() {
     <div className="dark:bg-black dark:text-slate-200">
       <Head>
         <title>AI Turing Chat</title>
-        <meta
-          name="description"
-          // content={
-          //   chatHistory.length === 0
-          //     ? "chatGPT alternative"
-          //     : chatHistory[0].request
-          // }
-        />
+        <meta name="description" content={"ARE YOU SMARTER THAN A BOT"} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <MainWrapper>{user ? <LoggedInFlow /> : <LoggedOutFlow />}</MainWrapper>
