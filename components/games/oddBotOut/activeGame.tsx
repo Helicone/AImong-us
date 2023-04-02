@@ -12,6 +12,9 @@ export default function ActiveGame(props: ActiveGameProps) {
   const { game } = props;
 
   const currentQuestion = game.questions[0];
+  if (!currentQuestion) {
+    return <div>Game not found</div>;
+  }
 
   const timeLeft =
     TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS -

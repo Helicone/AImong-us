@@ -6,7 +6,8 @@
 CREATE OR REPLACE FUNCTION public.submit_answer(
 	p_user_id uuid,
 	p_question_id bigint,
-	p_answer_text text)
+	p_answer_text text,
+	p_allowed_response_time integer)
     RETURNS answers
     LANGUAGE 'plpgsql'
     COST 100
@@ -16,9 +17,12 @@ DECLARE
     game_id uuid;
     answer_record public.answers%rowtype;
     answer_exists boolean;
+    question_created_at timestamp with time zone;
+    response_time_exceeded boolean;
+    all_answers_submitted boolean;
 BEGIN
     -- Check if the user is in the game
-    SELECT game INTO game_id
+    SELECT q.game, q.created_at INTO game_id, question_created_at
     FROM public.questions AS q
     JOIN public.player_games AS pg ON q.game = pg.game
     WHERE q.id = p_question_id AND pg.player = p_user_id;
@@ -26,6 +30,14 @@ BEGIN
     IF game_id IS NULL THEN
         RAISE EXCEPTION 'User is not in the game for the given question.'
         USING HINT = 'Ensure the user is in the game before submitting an answer.';
+    END IF;
+
+    -- Check if the response time is exceeded
+    SELECT now() > (question_created_at + (p_allowed_response_time || ' seconds')::interval) INTO response_time_exceeded;
+
+    IF response_time_exceeded THEN
+        RAISE EXCEPTION 'The allowed response time has been exceeded for this question.'
+        USING HINT = 'Ensure the answer is submitted within the allowed response time.';
     END IF;
 
     -- Check if the user has already submitted an answer for the question
@@ -44,23 +56,38 @@ BEGIN
         VALUES (p_question_id, p_answer_text, p_user_id)
         RETURNING * INTO answer_record;
 
+        -- Check if all players in the game have submitted answers
+        SELECT NOT EXISTS (
+            SELECT 1
+            FROM public.player_games AS pg
+            LEFT JOIN public.answers AS a ON a.player = pg.player AND a.question = p_question_id
+            WHERE pg.game = game_id AND pg.is_voted_out = false AND a.id IS NULL
+        ) INTO all_answers_submitted;
+
+        IF all_answers_submitted THEN
+            UPDATE public.games
+            SET status = 'voting'
+            WHERE id = game_id;
+        END IF;
+
         RETURN answer_record;
     END IF;
 END;
 $BODY$;
 
-ALTER FUNCTION public.submit_answer(uuid, bigint, text)
+ALTER FUNCTION public.submit_answer(uuid, bigint, text, integer)
     OWNER TO postgres;
 
-GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text) TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text, integer) TO PUBLIC;
 
-GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text) TO anon;
+GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text, integer) TO anon;
 
-GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text, integer) TO authenticated;
 
-GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text) TO postgres;
+GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text, integer) TO postgres;
 
-GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.submit_answer(uuid, bigint, text, integer) TO service_role;
+
 
 CREATE TABLE IF NOT EXISTS public.votes
 (

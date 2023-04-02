@@ -72,19 +72,25 @@ export default async function handler(
     return;
   }
   let hasQuestions = ((await getQuestions(game.game_id)).data ?? []).length > 0;
-  let questions: Questions = [];
-  if (game.player_count === NUM_PLAYERS && hasQuestions) {
+  if (game.player_count === NUM_PLAYERS && !hasQuestions) {
     const randomQuestion =
       listOfQuestions[Math.floor(Math.random() * listOfQuestions.length)];
+
     const { data: question, error: questionError } = await supabaseServer
       .from("questions")
       .insert([{ question: randomQuestion, game: game.game_id }]);
+
     if (questionError !== null) {
       res.status(500).json(undefined);
       return;
     }
+  }
+
+  let questions: Questions = [];
+  if (hasQuestions) {
+    const rawQuestion = (await getQuestions(game.game_id)).data ?? [];
     questions = await Promise.all(
-      ((await getQuestions(game.game_id)).data ?? []).map(async (question) => {
+      rawQuestion.map(async (question) => {
         return {
           ...question,
           answers: (await getAnswers(question.id)).data ?? [],
@@ -95,9 +101,17 @@ export default async function handler(
     const timeElapsed =
       Date.now() - new Date(currentQuestion.created_at!).getTime();
 
-    const timeRemaining = TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS - timeElapsed;
+    const timeRemaining =
+      TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000 - timeElapsed;
+    console.log("timeRemaining", timeRemaining);
 
-    // if (timeRemaining < 0) {
+    if (timeRemaining < 0) {
+      console.log("time is up");
+      await supabaseServer
+        .from("games")
+        .update({ status: "done" })
+        .match({ id: game.game_id });
+    }
   }
 
   res.status(200).json({
