@@ -24,8 +24,12 @@ export default function QuestionAnswering(props: QuestionAnsweringProps) {
 
   const colorMap: { [key in GameStates]: string } = {
     finding_players: "bg-yellow-600",
+    needs_question: "bg-yellow-600",
     questions: "bg-green-600",
-    voting: "bg-red-600",
+    voting: "bg-green-600",
+    voting_results: "bg-green-600",
+    should_continue: "bg-green-600",
+    game_over: "bg-red-600",
   };
 
   return (

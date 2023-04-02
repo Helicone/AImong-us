@@ -33,6 +33,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@types/react-lottie": "^1.2.6",
     "@types/react-syntax-highlighter": "^15.5.5",
     "autoprefixer": "^10.4.13",
     "postcss": "^8.4.19",
