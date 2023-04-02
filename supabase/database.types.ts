@@ -12,41 +12,41 @@ export interface Database {
       answers: {
         Row: {
           id: number
+          created_at: string | null
           question: number
           answer: string
           player: string
-          created_at: string | null
         }
         Insert: {
           id?: number
+          created_at?: string | null
           question: number
           answer: string
           player: string
-          created_at?: string | null
         }
         Update: {
           id?: number
+          created_at?: string | null
           question?: number
           answer?: string
           player?: string
-          created_at?: string | null
         }
       }
       games: {
         Row: {
-          status: string
           id: string
           created_at: string | null
+          status: string
         }
         Insert: {
-          status: string
           id?: string
           created_at?: string | null
+          status: string
         }
         Update: {
-          status?: string
           id?: string
           created_at?: string | null
+          status?: string
         }
       }
       player_games: {
@@ -69,21 +69,21 @@ export interface Database {
       questions: {
         Row: {
           id: number
+          created_at: string | null
           question: string
           game: string
-          created_at: string | null
         }
         Insert: {
           id?: number
+          created_at?: string | null
           question: string
           game: string
-          created_at?: string | null
         }
         Update: {
           id?: number
+          created_at?: string | null
           question?: string
           game?: string
-          created_at?: string | null
         }
       }
       votes: {
@@ -111,31 +111,37 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      find_or_create_active_game:
-        | {
-            Args: { p_user: string }
-            Returns: {
-              game_id: string
-              player_count: number
-              game_state: string
-            }[]
-          }
-        | {
-            Args: { p_user: string; p_num_players: number }
-            Returns: {
-              game_id: string
-              player_count: number
-              game_state: string
-            }[]
-          }
-      submit_answer: {
-        Args: {
-          p_user_id: string
-          p_question_id: number
-          p_answer_text: string
-        }
-        Returns: unknown
+      find_or_create_active_game: {
+        Args: { p_user: string; p_num_players: number }
+        Returns: { game_id: string; player_count: number; game_state: string }[]
       }
+      submit_answer:
+        | {
+            Args: {
+              p_user_id: string
+              p_question_id: number
+              p_answer_text: string
+            }
+            Returns: unknown
+          }
+        | {
+            Args: {
+              p_user_id: string
+              p_question_id: number
+              p_answer_text: string
+              p_allowed_response_time: unknown
+            }
+            Returns: unknown
+          }
+        | {
+            Args: {
+              p_user_id: string
+              p_question_id: number
+              p_answer_text: string
+              p_allowed_response_time: number
+            }
+            Returns: unknown
+          }
     }
     Enums: {
       [_ in never]: never

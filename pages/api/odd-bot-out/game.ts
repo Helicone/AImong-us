@@ -1,6 +1,9 @@
 import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { NUM_PLAYERS } from "../../../lib/constants";
+import {
+  NUM_PLAYERS,
+  TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
+} from "../../../lib/constants";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
 async function getActiveGame(user_id: string) {
@@ -29,9 +32,18 @@ async function getQuestions(gameId: string) {
     .order("created_at", { ascending: true });
 }
 
-export type Questions = NonNullable<
+async function getAnswers(question_id: number) {
+  return supabaseServer
+    .from("answers")
+    .select("*")
+    .filter("question", "eq", question_id);
+}
+
+export type Questions = (NonNullable<
   UnwrapPromise<ReturnType<typeof getQuestions>>["data"]
->;
+>[number] & {
+  answers: NonNullable<UnwrapPromise<ReturnType<typeof getAnswers>>["data"]>;
+})[];
 
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
 type ActiveGameType = ReturnType<typeof getActiveGame>;
@@ -59,8 +71,9 @@ export default async function handler(
     res.status(404).json(undefined);
     return;
   }
-  let questions = (await getQuestions(game.game_id)).data ?? [];
-  if (game.player_count === NUM_PLAYERS && questions.length === 0) {
+  let hasQuestions = ((await getQuestions(game.game_id)).data ?? []).length > 0;
+  let questions: Questions = [];
+  if (game.player_count === NUM_PLAYERS && hasQuestions) {
     const randomQuestion =
       listOfQuestions[Math.floor(Math.random() * listOfQuestions.length)];
     const { data: question, error: questionError } = await supabaseServer
@@ -70,8 +83,23 @@ export default async function handler(
       res.status(500).json(undefined);
       return;
     }
-    questions = (await getQuestions(game.game_id)).data ?? [];
+    questions = await Promise.all(
+      ((await getQuestions(game.game_id)).data ?? []).map(async (question) => {
+        return {
+          ...question,
+          answers: (await getAnswers(question.id)).data ?? [],
+        };
+      })
+    );
+    const currentQuestion = questions[questions.length - 1];
+    const timeElapsed =
+      Date.now() - new Date(currentQuestion.created_at!).getTime();
+
+    const timeRemaining = TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS - timeElapsed;
+
+    // if (timeRemaining < 0) {
   }
+
   res.status(200).json({
     ...game,
     questions: questions,

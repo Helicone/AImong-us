@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS } from "../../../../../lib/constants";
 import { supabaseServer } from "../../../../../lib/supabaseServer";
 
 async function submitAnswer(
@@ -12,6 +13,7 @@ async function submitAnswer(
       p_answer_text: answer,
       p_question_id: parseInt(question_id),
       p_user_id: user_id,
+      p_allowed_response_time: TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
     })
     .select("*")
     .single();
@@ -28,9 +30,16 @@ export default async function handler(
   const supabase = createServerSupabaseClient({ req, res });
   const { id: questionId } = req.query;
   const { answer } = req.body;
+  console.log("BODY", req.body);
   const userId = (await supabase.auth.getUser()).data.user?.id;
 
   if (!questionId || !answer || !userId) {
+    console.error(
+      "missing questionId, answer, or userId",
+      questionId,
+      answer,
+      userId
+    );
     res.status(401).json(undefined);
     return;
   }
@@ -41,6 +50,7 @@ export default async function handler(
     answer
   );
   if (error !== null) {
+    console.error(error);
     res.status(404).json(undefined);
     return;
   }

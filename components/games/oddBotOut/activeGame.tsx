@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   NUM_PLAYERS,
-  TOTAL_TIME_TO_ANSWER_QUESTION,
+  TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
 } from "../../../lib/constants";
 import { GameResponse } from "../../../pages/api/odd-bot-out/game";
 
@@ -14,7 +14,7 @@ export default function ActiveGame(props: ActiveGameProps) {
   const currentQuestion = game.questions[0];
 
   const timeLeft =
-    TOTAL_TIME_TO_ANSWER_QUESTION -
+    TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS -
     (Date.now() - new Date(currentQuestion.created_at!).getTime());
 
   const stateColor = (game_state: string) => {
@@ -72,7 +72,18 @@ export default function ActiveGame(props: ActiveGameProps) {
         <button
           className="bg-gray-600 text-white p-2 w-full hover:opacity-90"
           onClick={() => {
-            // Stuff here for testing
+            fetch(
+              "/api/odd-bot-out/questions/" + currentQuestion.id + "/answer",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ answer }),
+              }
+            ).then((res) => {
+              console.log("SET ANSWER", res);
+            });
           }}
         >
           Submit Answer
