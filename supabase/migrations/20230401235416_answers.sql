@@ -52,8 +52,8 @@ BEGIN
         USING HINT = 'Ensure the user has not submitted an answer before calling this function.';
     ELSE
         -- Submit the answer
-        INSERT INTO public.answers (question, answer, player)
-        VALUES (p_question_id, p_answer_text, p_user_id)
+        INSERT INTO public.answers (question, answer, player, is_bot_answer)
+        VALUES (p_question_id, p_answer_text, p_user_id, false)
         RETURNING * INTO answer_record;
 
         -- Check if all players in the game have submitted answers

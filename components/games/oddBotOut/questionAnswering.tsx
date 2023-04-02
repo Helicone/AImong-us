@@ -3,12 +3,13 @@ import {
   NUM_PLAYERS,
   TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
 } from "../../../lib/constants";
+import { GameStates } from "../../../lib/states";
 import { GameResponse } from "../../../pages/api/odd-bot-out/game";
 
-interface ActiveGameProps {
+interface QuestionAnsweringProps {
   game: NonNullable<GameResponse>;
 }
-export default function ActiveGame(props: ActiveGameProps) {
+export default function QuestionAnswering(props: QuestionAnsweringProps) {
   const { game } = props;
   const [answer, setAnswer] = useState<string>("");
 
@@ -21,17 +22,10 @@ export default function ActiveGame(props: ActiveGameProps) {
     TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS -
     (Date.now() - new Date(currentQuestion.created_at!).getTime());
 
-  const stateColor = (game_state: string) => {
-    switch (game_state) {
-      case "finding_players":
-        return "bg-yellow-600";
-      case "active":
-        return "bg-green-600";
-      case "finished":
-        return "bg-red-600";
-      default:
-        return "bg-red-600";
-    }
+  const colorMap: { [key in GameStates]: string } = {
+    finding_players: "bg-yellow-600",
+    questions: "bg-green-600",
+    voting: "bg-red-600",
   };
 
   return (
@@ -41,7 +35,7 @@ export default function ActiveGame(props: ActiveGameProps) {
           <div
             className={
               "align-start p-2 text-white font-bold rounded-lg " +
-              stateColor(game.game_state)
+              colorMap[game.game_state as GameStates]
             }
           >
             {game.game_state}

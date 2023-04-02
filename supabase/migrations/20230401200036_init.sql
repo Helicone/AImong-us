@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.games
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone DEFAULT now(),
+    random_bot_number uuid NOT NULL DEFAULT uuid_generate_v4(),
     status text COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT current_games_pkey PRIMARY KEY (id)
 )
@@ -63,7 +64,8 @@ CREATE TABLE IF NOT EXISTS public.answers
     created_at timestamp with time zone DEFAULT now(),
     question bigint NOT NULL,
     answer text COLLATE pg_catalog."default" NOT NULL,
-    player uuid NOT NULL,
+    player uuid,
+    is_bot_answer boolean NOT NULL,
     CONSTRAINT answers_pkey PRIMARY KEY (id),
     CONSTRAINT answers_player_fkey FOREIGN KEY (player)
         REFERENCES auth.users (id) MATCH SIMPLE
@@ -96,6 +98,7 @@ CREATE TABLE IF NOT EXISTS public.player_games
 (
     game uuid NOT NULL,
     player uuid,
+    random_player_number uuid NOT NULL DEFAULT uuid_generate_v4(),
     is_voted_out boolean NOT NULL DEFAULT false,
     CONSTRAINT player_games_game_fkey FOREIGN KEY (game)
         REFERENCES public.games (id) MATCH SIMPLE

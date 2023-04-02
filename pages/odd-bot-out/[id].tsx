@@ -3,12 +3,14 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { useQuery } from "@tanstack/react-query";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import ActiveGame from "../../components/games/oddBotOut/activeGame";
+import QuestionAnswering from "../../components/games/oddBotOut/questionAnswering";
 import FindingPlayers from "../../components/games/oddBotOut/findingPlayers";
+import Voting from "../../components/games/oddBotOut/voting";
 import LoggedInFlow from "../../components/loggedInFlow";
 import LoggedOutFlow from "../../components/loggedOutFlow";
 import { MainWrapper } from "../../components/mainWrapper";
 import { NUM_PLAYERS } from "../../lib/constants";
+import { GameStates } from "../../lib/states";
 import { GameResponse } from "../api/odd-bot-out/game";
 
 export default function Home() {
@@ -30,9 +32,12 @@ export default function Home() {
   if (!game) {
     return <div>Loading...</div>;
   }
-  const stateMap = {
+  const stateMap: {
+    [key in GameStates]: () => JSX.Element;
+  } = {
     finding_players: () => <FindingPlayers game={game} />,
-    active: () => <ActiveGame game={game} />,
+    questions: () => <QuestionAnswering game={game} />,
+    voting: () => <Voting game={game} />,
   };
 
   if (game?.game_state && !(game.game_state in stateMap)) {
