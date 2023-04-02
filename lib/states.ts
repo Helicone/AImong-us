@@ -1,5 +1,6 @@
 export type GameStates =
   | "finding_players"
+  | "starting_game"
   | "needs_question"
   | "questions"
   | "voting"
