@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useUser } from "@supabase/auth-helpers-react";
 import Head from "next/head";
-import LoggedInFlow from "../components/LoggedinFlow";
+import LoggedInFlow from "../components/loggedInFlow";
 import LoggedOutFlow from "../components/loggedOutFlow";
 import { MainWrapper } from "../components/mainWrapper";
 
