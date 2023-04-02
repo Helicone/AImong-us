@@ -97,19 +97,16 @@ export interface Database {
       }
       votes: {
         Row: {
-          question: number
           created_at: string | null
           player: string
           answer: number
         }
         Insert: {
-          question?: number
           created_at?: string | null
           player: string
           answer: number
         }
         Update: {
-          question?: number
           created_at?: string | null
           player?: string
           answer?: number
@@ -117,12 +114,26 @@ export interface Database {
       }
     }
     Views: {
-      [_ in never]: never
+      answers_with_player_games: {
+        Row: {
+          id: number | null
+          created_at: string | null
+          question: number | null
+          answer: string | null
+          player: string | null
+          is_bot_answer: boolean | null
+          random_player_number: string | null
+        }
+      }
     }
     Functions: {
       add_question_to_game: {
         Args: { p_game_id: string; p_question_text: string }
         Returns: unknown
+      }
+      cast_vote: {
+        Args: { p_player_id: string; p_answer_id: number }
+        Returns: undefined
       }
       find_or_create_active_game: {
         Args: { p_user: string; p_num_players: number }

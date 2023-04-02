@@ -35,7 +35,7 @@ async function getQuestions(gameId: string) {
 
 async function getAnswers(question_id: number) {
   return supabaseServer
-    .from("answers")
+    .from("answers_with_player_games")
     .select("*")
     .filter("question", "eq", question_id);
 }
@@ -55,11 +55,18 @@ async function getPlayers(gameId: string) {
     .filter("game", "eq", gameId);
   const botId = await getBotNumber(gameId);
 
-  return playerGames.data!.concat([
-    {
-      random_player_number: botId.data!.random_bot_number ?? "HELLO",
-    },
-  ]);
+  const randomPlayerNumbers = playerGames
+    .data!.concat([
+      {
+        random_player_number: botId.data!.random_bot_number ?? "HELLO",
+      },
+    ])
+    .map((player) => player.random_player_number);
+  const sortedPlayerNumbers = randomPlayerNumbers.sort();
+  return sortedPlayerNumbers.map((player, index) => ({
+    player,
+    index,
+  }));
 }
 
 async function currentPlayerRandomId(gameId: string, userId: string) {
@@ -172,7 +179,9 @@ async function getObfuscatedQuestions(gameId: string) {
           await getAnswers(q.id)
         ).data?.map((a) => ({
           ...a,
-          player: a.is_bot_answer ? botId.data!.random_bot_number : a.player,
+          player: a.is_bot_answer
+            ? botId.data!.random_bot_number
+            : a.random_player_number,
           is_bot_answer: false,
         })) ?? [],
     })) ?? []

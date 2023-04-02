@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   NUM_PLAYERS,
+  PLAYER_NAMES,
   TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
 } from "../../../lib/constants";
 import { GameResponse } from "../../../pages/api/odd-bot-out/game";
@@ -20,12 +21,38 @@ export default function Voting(props: VotingProps) {
 
   return (
     <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
-      Voting
-      {currentQuestion.answers.map((answer, i) => (
-        <div className="flex flex-col col-span-2" key={i}>
-          {answer.player}
-        </div>
-      ))}
+      <div>Voting</div>
+      <div className="flex flex-col col-span-2 gap-5">
+        <div>{currentQuestion.question}</div>
+
+        {currentQuestion.answers.map((answer, i) => (
+          <div className="" key={i}>
+            <div className="flex flex-row gap-2">
+              <div>
+                {
+                  PLAYER_NAMES[
+                    game.players.findIndex(
+                      (player) => player.player === answer.player
+                    )
+                  ]
+                }
+              </div>
+              <div>{":"}</div>
+              <div>{answer.answer}</div>
+            </div>
+            <div>
+              <button
+                className="border-2 border-gray-800 bg-gray-600 text-white p-2  hover:opacity-90"
+                onClick={() => {
+                  fetch(`/api/odd-bot-out/answer/${answer.id}/vote`);
+                }}
+              >
+                Vote
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

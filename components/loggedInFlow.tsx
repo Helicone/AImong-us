@@ -4,8 +4,6 @@ import { useState } from "react";
 import { GameResponse } from "../pages/api/odd-bot-out/game";
 
 export default function LoggedInFlow() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const client = useSupabaseClient();
   const router = useRouter();
 
