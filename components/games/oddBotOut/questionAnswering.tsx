@@ -13,7 +13,8 @@ export default function QuestionAnswering(props: QuestionAnsweringProps) {
   const { game } = props;
   const [answer, setAnswer] = useState<string>("");
 
-  const currentQuestion = game.questions[0];
+  const currentQuestion = game.questions[game.questions.length - 1];
+  console.log(game);
   if (!currentQuestion) {
     return <div>Game not found</div>;
   }
@@ -56,7 +57,7 @@ export default function QuestionAnswering(props: QuestionAnsweringProps) {
             htmlFor="answer"
             className="block text-sm font-medium leading-6 text-gray-900"
           >
-            {game.questions[0].question}
+            {currentQuestion.question}
           </label>
           <div className="mt-2">
             <textarea

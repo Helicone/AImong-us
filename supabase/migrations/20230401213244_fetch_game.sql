@@ -21,7 +21,7 @@ BEGIN
     SELECT g.id, g.status INTO active_game_id, game_status
     FROM public.games AS g
     JOIN public.player_games AS pg ON g.id = pg.game
-    WHERE g.status IN ('finding_players', 'needs_question', 'questions', 'voting', 'voting_results', 'should_continue') AND pg.player = p_user;
+    WHERE g.status IN ('finding_players', 'starting_game', 'needs_question', 'questions', 'voting', 'voting_results', 'should_continue') AND pg.player = p_user;
 
     -- If the user is not in an active game, find or create one
     IF active_game_id IS NULL THEN
@@ -57,11 +57,11 @@ BEGIN
         -- Set the game status to 'active' if there are p_num_players players
         IF player_count = p_num_players THEN
             UPDATE public.games
-            SET status = 'needs_question'
+            SET status = 'starting_game'
             WHERE id = active_game_id;
 
             -- Update the game_status variable
-            game_status := 'needs_question';
+            game_status := 'starting_game';
         END IF;
     ELSE
         -- Get the player count for the active game the user is in

@@ -2,6 +2,9 @@ import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
   NUM_PLAYERS,
+  NUM_QUESTIONS_PER_GAME,
+  TIME_ALLOWANCE_STARTING_GAME_SECONDS,
+  TIME_ALLOWANCE_VOTING_RESULTS_SECONDS,
   TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
 } from "../../../lib/constants";
 import { GameStates } from "../../../lib/states";
@@ -64,7 +67,7 @@ async function getPlayers(gameId: string) {
     .map((player) => player.random_player_number);
   const sortedPlayerNumbers = randomPlayerNumbers.sort();
   return sortedPlayerNumbers.map((player, index) => ({
-    player,
+    randomPlayerNumber: player,
     index,
   }));
 }
@@ -179,7 +182,8 @@ async function getObfuscatedQuestions(gameId: string) {
           await getAnswers(q.id)
         ).data?.map((a) => ({
           ...a,
-          player: a.is_bot_answer
+          player: "Obfuscated",
+          random_player_number: a.is_bot_answer
             ? botId.data!.random_bot_number
             : a.random_player_number,
           is_bot_answer: false,
@@ -204,6 +208,14 @@ async function votingResultsHandler(
   game: NonNullable<UnwrapPromise<ActiveGameType>["data"]>,
   userId: string
 ): Promise<NonNullable<GameResponse>> {
+  console.log("voting results handler");
+  console.log(
+    await supabaseServer.rpc("voting_results_tick", {
+      p_game_id: game.game_id,
+      p_num_questions_per_game: NUM_QUESTIONS_PER_GAME,
+      p_time_allowance_seconds: TIME_ALLOWANCE_VOTING_RESULTS_SECONDS,
+    })
+  );
   return {
     ...game,
     questions: await getObfuscatedQuestions(game.game_id),
@@ -211,6 +223,26 @@ async function votingResultsHandler(
     me: await currentPlayerRandomId(game.game_id, userId),
   };
 }
+
+async function startingGameHandler(
+  game: NonNullable<UnwrapPromise<ActiveGameType>["data"]>,
+  userId: string
+): Promise<NonNullable<GameResponse>> {
+  console.log("starting game handler");
+  console.log(
+    await supabaseServer.rpc("start_game_tick", {
+      p_game_id: game.game_id,
+      p_time_allowance_seconds: TIME_ALLOWANCE_STARTING_GAME_SECONDS,
+    })
+  );
+  return {
+    ...game,
+    questions: [],
+    players: await getPlayers(game.game_id),
+    me: await currentPlayerRandomId(game.game_id, userId),
+  };
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<GameResponse>
@@ -242,6 +274,7 @@ export default async function handler(
     ) => Promise<NonNullable<GameResponse>>
   > = {
     finding_players: findingPlayersHandler,
+    starting_game: startingGameHandler,
     needs_question: needsQuestionHandler,
     questions: questionsHandler,
     voting: votingHandler,

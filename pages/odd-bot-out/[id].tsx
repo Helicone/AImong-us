@@ -16,6 +16,7 @@ import { MainWrapper } from "../../components/mainWrapper";
 import { NUM_PLAYERS } from "../../lib/constants";
 import { GameStates } from "../../lib/states";
 import { GameResponse } from "../api/odd-bot-out/game";
+import VotingResults from "../../components/games/oddBotOut/votingResults";
 
 export default function Home() {
   const user = useUser();
@@ -58,8 +59,10 @@ export default function Home() {
     [key in GameStates]: () => JSX.Element;
   } = {
     finding_players: () => <FindingPlayers game={game} />,
+    starting_game: () => <div>Starting game...</div>,
     questions: () => <QuestionAnswering game={game} />,
     voting: () => <Voting game={game} />,
+    voting_results: () => <VotingResults game={game} />,
   };
 
   if (game?.game_state && !(game.game_state in stateMap)) {

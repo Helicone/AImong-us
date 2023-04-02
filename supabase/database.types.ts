@@ -61,18 +61,21 @@ export interface Database {
           player: string | null
           random_player_number: string
           is_voted_out: boolean
+          created_at: string
         }
         Insert: {
           game: string
           player?: string | null
           random_player_number?: string
           is_voted_out?: boolean
+          created_at?: string
         }
         Update: {
           game?: string
           player?: string | null
           random_player_number?: string
           is_voted_out?: boolean
+          created_at?: string
         }
       }
       questions: {
@@ -123,6 +126,7 @@ export interface Database {
           player: string | null
           is_bot_answer: boolean | null
           random_player_number: string | null
+          vote_count: number | null
         }
       }
     }
@@ -139,6 +143,10 @@ export interface Database {
         Args: { p_user: string; p_num_players: number }
         Returns: { game_id: string; player_count: number; game_state: string }[]
       }
+      start_game_tick: {
+        Args: { p_game_id: string; p_time_allowance_seconds: number }
+        Returns: undefined
+      }
       submit_answer: {
         Args: {
           p_user_id: string
@@ -147,6 +155,14 @@ export interface Database {
           p_allowed_response_time: number
         }
         Returns: unknown
+      }
+      voting_results_tick: {
+        Args: {
+          p_game_id: string
+          p_time_allowance_seconds: number
+          p_num_questions_per_game: number
+        }
+        Returns: undefined
       }
     }
     Enums: {

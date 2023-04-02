@@ -6,10 +6,10 @@ import {
 } from "../../../lib/constants";
 import { GameResponse } from "../../../pages/api/odd-bot-out/game";
 
-interface VotingProps {
+interface VotingResultsProps {
   game: NonNullable<GameResponse>;
 }
-export default function Voting(props: VotingProps) {
+export default function VotingResults(props: VotingResultsProps) {
   const { game } = props;
   const [answer, setAnswer] = useState<string>("");
 
@@ -21,39 +21,33 @@ export default function Voting(props: VotingProps) {
 
   return (
     <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
-      <div>Voting</div>
+      <div>The results are in</div>
       <div className="flex flex-col col-span-2 gap-5">
         <div>{currentQuestion.question}</div>
-
-        {currentQuestion.answers.map((answer, i) => (
-          <div className="" key={i}>
-            <div className="flex flex-row gap-2">
+        {currentQuestion.answers
+          .sort((a, b) => b.vote_count! - a.vote_count!)
+          .map((a, i) => (
+            <div
+              className={`${
+                a.answer === answer ? "bg-blue-500" : "bg-gray-200"
+              } p-2 rounded`}
+              key={i}
+            >
               <div>
                 {
                   PLAYER_NAMES[
                     game.players.findIndex(
                       (player) =>
-                        player.randomPlayerNumber ===
-                        answer.random_player_number
+                        player.randomPlayerNumber === a.random_player_number
                     )
                   ]
                 }
               </div>
-              <div>{":"}</div>
-              <div>{answer.answer}</div>
+              {a.answer}
+              <div>Vote count: {a.vote_count}</div>
             </div>
-            <div>
-              <button
-                className="border-2 border-gray-800 bg-gray-600 text-white p-2  hover:opacity-90"
-                onClick={() => {
-                  fetch(`/api/odd-bot-out/answer/${answer.id}/vote`);
-                }}
-              >
-                Vote
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        Hello
       </div>
     </div>
   );
