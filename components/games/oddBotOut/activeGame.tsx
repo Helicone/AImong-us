@@ -19,13 +19,13 @@ export default function ActiveGame(props: ActiveGameProps) {
   const stateColor = (game_state: string) => {
     switch (game_state) {
       case "finding_players":
-        return "bg-yellow-300";
+        return "bg-yellow-600";
       case "active":
-        return "bg-green-300";
+        return "bg-green-600";
       case "finished":
-        return "bg-red-300";
+        return "bg-red-600";
       default:
-        return "bg-red-300";
+        return "bg-red-600";
     }
   };
 
