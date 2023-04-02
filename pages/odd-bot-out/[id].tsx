@@ -1,5 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
-import { useUser } from "@supabase/auth-helpers-react";
+import {
+  useSession,
+  useSupabaseClient,
+  useUser,
+} from "@supabase/auth-helpers-react";
 import { useQuery } from "@tanstack/react-query";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -15,6 +19,7 @@ import { GameResponse } from "../api/odd-bot-out/game";
 
 export default function Home() {
   const user = useUser();
+  const supabase = useSupabaseClient();
 
   const { data: game, isLoading: gameLoading } = useQuery({
     queryKey: ["odd-bot-out", "game"],
@@ -30,7 +35,24 @@ export default function Home() {
     }
   }
   if (!game) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        Loading... try logging out and back in if you are stuck here
+        <div>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => {
+              supabase.auth
+                .signOut()
+                .then(console.log)
+                .then(() => router.push("/"));
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
   }
   const stateMap: {
     [key in GameStates]: () => JSX.Element;
