@@ -25,8 +25,8 @@ export default function FindingPlayers(props: FindingPlayersProps) {
                 preserveAspectRatio: "xMidYMid slice",
               },
             }}
-            height={200}
-            width={200}
+            height={150}
+            width={150}
             isStopped={false}
             isPaused={false}
             style={{
