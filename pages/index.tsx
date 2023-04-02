@@ -8,7 +8,7 @@ import { MainWrapper } from "../components/mainWrapper";
 export default function Home() {
   const user = useUser();
   return (
-    <div>
+    <div className="bg-cyan-100">
       <Head>
         <title>AI Turing Chat</title>
         <meta name="description" content={"ARE YOU SMARTER THAN A BOT"} />
