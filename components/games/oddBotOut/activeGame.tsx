@@ -10,6 +10,7 @@ interface ActiveGameProps {
 }
 export default function ActiveGame(props: ActiveGameProps) {
   const { game } = props;
+  const [answer, setAnswer] = useState<string>("");
 
   const currentQuestion = game.questions[0];
   if (!currentQuestion) {
@@ -32,7 +33,6 @@ export default function ActiveGame(props: ActiveGameProps) {
         return "bg-red-600";
     }
   };
-  const [answer, setAnswer] = useState<string>("");
 
   return (
     <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
@@ -68,8 +68,12 @@ export default function ActiveGame(props: ActiveGameProps) {
               className="block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-0 sm:py-1.5 sm:text-md sm:leading-6"
               defaultValue={"..."}
               value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value.length > 160) return;
+                setAnswer(e.target.value);
+              }}
             />
+            <p className="mt-2 text-sm text-gray-500">{answer.length}/160</p>
           </div>
         </div>
         <button
