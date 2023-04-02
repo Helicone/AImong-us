@@ -13,36 +13,34 @@ interface FindingPlayersProps {
 export default function FindingPlayers(props: FindingPlayersProps) {
   const { game } = props;
   return (
-    <Col className="h-full">
-      <Col className="items-center gap-2">
-        <Row className="justify-center">
-          <Lottie
-            options={{
-              loop: true,
-              autoplay: true,
-              animationData: searching,
-              rendererSettings: {
-                preserveAspectRatio: "xMidYMid slice",
-              },
-            }}
-            height={150}
-            width={150}
-            isStopped={false}
-            isPaused={false}
-            style={{
-              color: "#6366f1",
-              pointerEvents: "none",
-              background: "transparent",
-            }}
-          />
-        </Row>
-        <div className="text-xl">Finding players...</div>
-        <div className="text-sm right-0 bottom-0">
-          {game?.player_count} / {NUM_PLAYERS}
-        </div>
-      </Col>
+    <Col className="h-full items-center">
+      <Row className="justify-center">
+        <Lottie
+          options={{
+            loop: true,
+            autoplay: true,
+            animationData: searching,
+            rendererSettings: {
+              preserveAspectRatio: "xMidYMid slice",
+            },
+          }}
+          height={150}
+          width={150}
+          isStopped={false}
+          isPaused={false}
+          style={{
+            color: "#6366f1",
+            pointerEvents: "none",
+            background: "transparent",
+          }}
+        />
+      </Row>
+      <div className="text-xl">Finding players...</div>
+      <div className="text-sm right-0 bottom-0">
+        {game?.player_count} / {NUM_PLAYERS}
+      </div>
       <Spacer h={6} />
-      <Col className="gap-4 mx-4">
+      <Col className="gap-4 max-w-sm w-full">
         {Array.from({ length: NUM_PLAYERS }).map((_, i) => (
           <MysteryAvatar key={i} isFound={i < game?.player_count} />
         ))}
@@ -58,7 +56,7 @@ export function MysteryAvatar(props: { isFound: boolean }) {
     isFound ? "bg-gray-600" : "bg-gray-300 animate-pulse"
   );
   return (
-    <Row className="gap-3 items-center">
+    <Row className="gap-3 items-center w-full">
       <div className={clsx("w-8 h-8 rounded-full", avatarClass)} />
       <div className={clsx(" grow h-4 ", avatarClass)} />
     </Row>
