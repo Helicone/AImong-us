@@ -5,6 +5,7 @@ import { Col } from "../../layout/col";
 import { Row } from "../../layout/row";
 import { Spacer } from "../../layout/spacer";
 import Lottie from "react-lottie";
+import { IoPersonCircle } from "react-icons/io5";
 import searching from "../../../public/lottie/finding.json";
 interface FindingPlayersProps {
   game: NonNullable<GameResponse>;
@@ -35,30 +36,12 @@ export default function FindingPlayers(props: FindingPlayersProps) {
           }}
         />
       </Row>
-      <div className="text-xl">Finding players...</div>
+      <div className="text-xl">
+        {game?.game_state == "find"}Finding players...
+      </div>
       <div className="text-sm right-0 bottom-0">
         {game?.player_count} / {NUM_PLAYERS}
       </div>
-      <Spacer h={6} />
-      <Col className="gap-4 max-w-sm w-full">
-        {Array.from({ length: NUM_PLAYERS }).map((_, i) => (
-          <MysteryAvatar key={i} isFound={i < game?.player_count} />
-        ))}
-      </Col>
     </Col>
-  );
-}
-
-export function MysteryAvatar(props: { isFound: boolean }) {
-  const { isFound } = props;
-  const avatarClass = clsx(
-    "transition-colors",
-    isFound ? "bg-gray-600" : "bg-gray-300 animate-pulse"
-  );
-  return (
-    <Row className="gap-3 items-center w-full">
-      <div className={clsx("w-8 h-8 rounded-full", avatarClass)} />
-      <div className={clsx(" grow h-4 ", avatarClass)} />
-    </Row>
   );
 }
