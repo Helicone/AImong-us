@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   NUM_PLAYERS,
   TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
@@ -9,6 +9,27 @@ import { GameResponse } from "../../../pages/api/odd-bot-out/game";
 interface QuestionAnsweringProps {
   game: NonNullable<GameResponse>;
 }
+function Timer(props: { totalTime: number; timeStarted: number }) {
+  const { totalTime, timeStarted } = props;
+  const [timeLeft, setTimeLeft] = useState(totalTime);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(totalTime - (Date.now() - timeStarted));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [totalTime, timeStarted]);
+
+  return (
+    <div className="flex flex-row">
+      <div className="flex flex-row items-center">
+        <div className="text-2xl">{Math.floor(timeLeft / 1000)}</div>
+        <div className="text-xl">s</div>
+      </div>
+    </div>
+  );
+}
+
 export default function QuestionAnswering(props: QuestionAnsweringProps) {
   const { game } = props;
   const [answer, setAnswer] = useState<string>("");
@@ -20,8 +41,9 @@ export default function QuestionAnswering(props: QuestionAnsweringProps) {
   }
 
   const timeLeft =
-    TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS -
+    TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000 -
     (Date.now() - new Date(currentQuestion.created_at!).getTime());
+  console.log(timeLeft);
 
   const colorMap: { [key in GameStates]: string } = {
     finding_players: "bg-yellow-600",
@@ -49,7 +71,10 @@ export default function QuestionAnswering(props: QuestionAnsweringProps) {
             {game.player_count} / {NUM_PLAYERS} Players Joined
           </p>
         </div>
-        <div className="flex flex-col">{Math.ceil(timeLeft / 1000)}s left!</div>
+        <Timer
+          totalTime={TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000}
+          timeStarted={new Date(currentQuestion.created_at!).getTime()}
+        />
       </div>
       <div className="flex flex-col col-span-2">
         <div>
