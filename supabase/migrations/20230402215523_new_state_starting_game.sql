@@ -57,9 +57,9 @@ GRANT EXECUTE ON FUNCTION public.voting_results_tick(uuid, integer, integer) TO 
 GRANT EXECUTE ON FUNCTION public.voting_results_tick(uuid, integer, integer) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.start_game_tick(
-	p_game_id uuid,
-	p_time_allowance_seconds integer)
-    RETURNS void
+    p_game_id uuid,
+    p_time_allowance_seconds integer)
+    RETURNS text
     LANGUAGE 'plpgsql'
     COST 100
     VOLATILE PARALLEL UNSAFE
@@ -82,6 +82,9 @@ BEGIN
     IF v_game_state = 'starting_game' AND
        (now() - v_last_player_join_time) > (p_time_allowance_seconds * interval '1 second') THEN
         UPDATE games SET status = 'needs_question' WHERE id = p_game_id;
+        RETURN 'Game state updated to "needs_question"';
+    ELSE
+        RETURN 'No action taken' || v_game_state || v_last_player_join_time;
     END IF;
 END;
 $BODY$;

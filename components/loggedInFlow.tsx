@@ -14,7 +14,11 @@ export default function LoggedInFlow() {
           className="border-2 border-gray-800 bg-gray-600 text-white p-2 w-full hover:opacity-90"
           onClick={() => {
             console.log("play odd bot out");
-            fetch("/api/odd-bot-out/game")
+            fetch("/api/odd-bot-out/game?get_new_game=true")
+              .then((res) => {
+                console.log("RES", res);
+                return res;
+              })
               .then((res) => res.json() as Promise<GameResponse>)
               .then((res) => {
                 if (res?.game_id) {

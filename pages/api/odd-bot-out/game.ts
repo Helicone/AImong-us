@@ -10,11 +10,12 @@ import {
 import { GameStates } from "../../../lib/states";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
-async function getActiveGame(user_id: string) {
+async function getActiveGame(user_id: string, getNewGame: boolean) {
   return await supabaseServer
     .rpc("find_or_create_active_game", {
       p_user: user_id,
       p_num_players: NUM_PLAYERS,
+      p_get_new_game: getNewGame,
     })
     .select("*")
     .single();
@@ -73,12 +74,14 @@ async function getPlayers(gameId: string) {
 }
 
 async function currentPlayerRandomId(gameId: string, userId: string) {
-  return await supabaseServer
-    .from("player_games")
-    .select("random_player_number")
-    .filter("game", "eq", gameId)
-    .filter("player", "eq", userId)
-    .single();
+  return (
+    await supabaseServer
+      .from("player_games")
+      .select("random_player_number")
+      .filter("game", "eq", gameId)
+      .filter("player", "eq", userId)
+      .single()
+  ).data?.random_player_number;
 }
 
 export type Questions = (NonNullable<
@@ -229,6 +232,8 @@ async function startingGameHandler(
   userId: string
 ): Promise<NonNullable<GameResponse>> {
   console.log("starting game handler");
+  console.log("game_id", game.game_id);
+  console.log("p_time_allowance_seconds", TIME_ALLOWANCE_STARTING_GAME_SECONDS);
   console.log(
     await supabaseServer.rpc("start_game_tick", {
       p_game_id: game.game_id,
@@ -248,6 +253,8 @@ export default async function handler(
   res: NextApiResponse<GameResponse>
 ) {
   console.log("fetching game");
+  const { get_new_game: getNewGame } = req.query;
+
   const supabase = createServerSupabaseClient({ req, res });
   const user = await supabase.auth.getUser();
   const userId = user.data.user?.id;
@@ -256,7 +263,10 @@ export default async function handler(
     return;
   }
 
-  const { data: game, error } = await getActiveGame(userId);
+  const { data: game, error } = await getActiveGame(
+    userId,
+    getNewGame === "true"
+  );
 
   if (error !== null) {
     res.status(404).json(undefined);
@@ -279,9 +289,7 @@ export default async function handler(
     questions: questionsHandler,
     voting: votingHandler,
     voting_results: votingResultsHandler,
-    game_over: async () => {
-      throw new Error("game is over");
-    },
+    game_over: findingPlayersHandler,
     should_continue: async () => {
       throw new Error("game should continue");
     },

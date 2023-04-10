@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   NUM_PLAYERS,
+  NUM_QUESTIONS_PER_GAME,
   TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
 } from "../../../lib/constants";
 import { GameStates } from "../../../lib/states";
@@ -57,6 +58,10 @@ export default function QuestionAnswering(props: QuestionAnsweringProps) {
 
   return (
     <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
+      <div>
+        {" "}
+        Question {game.questions.length}/{NUM_QUESTIONS_PER_GAME}
+      </div>
       <div className="flex flex-row justify-between col-span-2">
         <div className="flex flex-row">
           <div

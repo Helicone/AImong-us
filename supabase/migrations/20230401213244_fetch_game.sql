@@ -4,8 +4,9 @@
 -- Please report an issue for any failure with the reproduction steps.
 
 CREATE OR REPLACE FUNCTION public.find_or_create_active_game(
-	p_user uuid,
-	p_num_players integer)
+    p_user uuid,
+    p_num_players integer,
+    p_get_new_game boolean)
     RETURNS TABLE(game_id uuid, player_count integer, game_state text) 
     LANGUAGE 'plpgsql'
     COST 100
@@ -21,10 +22,14 @@ BEGIN
     SELECT g.id, g.status INTO active_game_id, game_status
     FROM public.games AS g
     JOIN public.player_games AS pg ON g.id = pg.game
-    WHERE g.status IN ('finding_players', 'starting_game', 'needs_question', 'questions', 'voting', 'voting_results', 'should_continue') AND pg.player = p_user;
-
+    WHERE pg.player = p_user
+    ORDER BY g.created_at DESC
+    LIMIT 1;
+    SELECT COUNT(*) INTO player_count
+    FROM public.player_games
+    WHERE game = active_game_id;
     -- If the user is not in an active game, find or create one
-    IF active_game_id IS NULL THEN
+    IF p_get_new_game AND (game_status = 'game_over' OR active_game_id is NULL) THEN
         -- Try to find a game with status 'finding_players' and less than p_num_players players
         SELECT g.id, g.status, COUNT(pg.player) INTO active_game_id, game_status, player_count
         FROM public.games AS g
@@ -63,11 +68,6 @@ BEGIN
             -- Update the game_status variable
             game_status := 'starting_game';
         END IF;
-    ELSE
-        -- Get the player count for the active game the user is in
-        SELECT COUNT(*) INTO player_count
-        FROM public.player_games
-        WHERE game = active_game_id;
     END IF;
 
     -- Return the game_id, player_count, and game_state
@@ -75,16 +75,16 @@ BEGIN
 END;
 $BODY$;
 
-ALTER FUNCTION public.find_or_create_active_game(uuid, integer)
+ALTER FUNCTION public.find_or_create_active_game(uuid, integer, boolean)
     OWNER TO postgres;
 
-GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer, boolean) TO PUBLIC;
 
-GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO anon;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer, boolean) TO anon;
 
-GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer, boolean) TO authenticated;
 
-GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO postgres;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer, boolean) TO postgres;
 
-GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.find_or_create_active_game(uuid, integer, boolean) TO service_role;
 

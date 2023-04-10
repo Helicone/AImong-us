@@ -13,7 +13,6 @@ async function submitAnswer(
       p_answer_text: answer,
       p_question_id: parseInt(question_id),
       p_user_id: user_id,
-      p_allowed_response_time: TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
     })
     .select("*")
     .single();

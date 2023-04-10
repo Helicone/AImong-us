@@ -63,6 +63,9 @@ export default function Home() {
     questions: () => <QuestionAnswering game={game} />,
     voting: () => <Voting game={game} />,
     voting_results: () => <VotingResults game={game} />,
+    game_over: () => <div>Game over</div>,
+    needs_question: () => <div>Needs question</div>,
+    should_continue: () => <div>Should continue</div>,
   };
 
   if (game?.game_state && !(game.game_state in stateMap)) {
