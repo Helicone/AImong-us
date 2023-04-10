@@ -1,13 +1,8 @@
 #![feature(decl_macro)]
-#[macro_use] extern crate rocket;
+#[macro_use]
+extern crate rocket;
 
-use rocket::{
-    State,
-    Request,
-    http::Status,
-    response::status::BadRequest,
-    request::Outcome,
-};
+use rocket::{http::Status, request::Outcome, response::status::BadRequest, Request, State};
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -26,7 +21,7 @@ impl Session {
     fn new_with_creator(creator_identity: ClientIdentity) -> Self {
         Self {
             creator_identity,
-            players: vec![creator_identity]
+            players: vec![creator_identity],
         }
     }
 
@@ -46,10 +41,16 @@ impl<'r> rocket::request::FromRequest<'r> for ClientIdentity {
         if let Some(identity) = request.headers().get("X-Identity").next() {
             match u128::from_str(identity) {
                 Ok(identity) => Outcome::Success(ClientIdentity(identity)),
-                Err(_) => Outcome::Failure((Status::BadRequest, "could not parse client identity".to_string())),
+                Err(_) => Outcome::Failure((
+                    Status::BadRequest,
+                    "could not parse client identity".to_string(),
+                )),
             }
         } else {
-            Outcome::Failure((Status::BadRequest, "missing client identity (X-Identity header)".to_string()))
+            Outcome::Failure((
+                Status::BadRequest,
+                "missing client identity (X-Identity header)".to_string(),
+            ))
         }
     }
 }
@@ -63,29 +64,53 @@ impl<'r> rocket::request::FromRequest<'r> for ClientIdentity {
 fn create_room(identity: ClientIdentity, sessions: &State<SessionsMap>) {
     let random_code: u128 = 123456789; // TODO actually generate this randomly
     let session = Session::new_with_creator(identity);
-    sessions.0.write().unwrap().insert(random_code, Mutex::new(session));
+    sessions
+        .0
+        .write()
+        .unwrap()
+        .insert(random_code, Mutex::new(session));
 }
 
 /// Joins an existing session using its random code.
 /// Once joined, client should subscribe to the session's websocket.
 #[get("/join-room?<room>")]
-fn join_room(identity: ClientIdentity, room: String, sessions: &State<SessionsMap>) -> Result<(), BadRequest<String>> {
-
+fn join_room(
+    identity: ClientIdentity,
+    room: String,
+    sessions: &State<SessionsMap>,
+) -> Result<(), BadRequest<String>> {
     let random_code = match u128::from_str(&room) {
         Ok(code) => code,
-        Err(_) => return Err(BadRequest(Some("couldn't parse room ID".to_string()))),
+        Err(_) => return Err(BadRequest("couldn't parse room ID".to_string())),
     };
     let sessions = sessions.0.read().unwrap();
     if let Some(session) = sessions.get(&random_code) {
         session.lock().unwrap().add_player(identity);
         Ok(())
     } else {
-        Err(BadRequest(Some("session does not exist".to_string())))
+        Err(BadRequest("session does not exist".to_string()))
     }
+}
+
+#[get("/echo?channel")]
+fn echo_channel(ws: ws::WebSocket) -> ws::Channel<'static> {
+    use rocket::futures::{SinkExt, StreamExt};
+
+    ws.channel(move |mut stream| {
+        Box::pin(async move {
+            while let Some(message) = stream.next().await {
+                let _ = stream.send(message?).await;
+            }
+
+            Ok(())
+        })
+    })
 }
 
 #[rocket::launch]
 fn rocket() -> _ {
     let sessions = SessionsMap(RwLock::new(HashMap::new()));
-    rocket::build().manage(sessions).mount("/", routes![create_room, join_room])
+    rocket::build()
+        .manage(sessions)
+        .mount("/", routes![create_room, join_room])
 }
