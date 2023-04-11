@@ -28,6 +28,17 @@ impl Session {
     fn add_player(&mut self, identity: ClientIdentity) {
         self.players.push(identity);
     }
+
+    fn get_game_state_view(&self) -> ClientGameStateView {
+        ClientGameStateView {
+            number_of_players: self.players.len() as u8,
+        }
+    }
+}
+
+#[derive(serde::Serialize)]
+struct ClientGameStateView {
+    number_of_players: u8,
 }
 
 #[derive(Clone, Copy)]
@@ -97,11 +108,14 @@ fn join_room(
 
 fn manage_game_socket(ws: ws::WebSocket, identity: ClientIdentity, session: Arc<Mutex<Session>>) -> ws::Channel<'static> {
     use rocket::futures::{SinkExt, StreamExt};
+    use ws::Message;
 
     ws.channel(move |mut stream| {
         Box::pin(async move {
             let _identity = identity;
-            let _session = session;
+            let session = session;
+            let gamestate = session.lock().unwrap().get_game_state_view();
+            stream.send(Message::Text(serde_json::to_string(&gamestate).unwrap())).await.unwrap();
             while let Some(message) = stream.next().await {
                 let _ = stream.send(message?).await;
             }

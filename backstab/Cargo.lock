@@ -56,6 +56,8 @@ version = "0.1.0"
 dependencies = [
  "rocket",
  "rocket_ws",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

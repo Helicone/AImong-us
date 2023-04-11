@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 rocket = { package = "rocket", git = "https://github.com/SergioBenitez/Rocket.git", rev = "a82508b403420bd941c32ddec3ee3e4875f2b8a5" }
 ws = { package = "rocket_ws", git = "https://github.com/SergioBenitez/Rocket.git", rev = "a82508b403420bd941c32ddec3ee3e4875f2b8a5" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
