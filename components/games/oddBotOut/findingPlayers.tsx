@@ -7,8 +7,9 @@ import { Spacer } from "../../layout/spacer";
 import Lottie from "react-lottie";
 import { IoPersonCircle } from "react-icons/io5";
 import searching from "../../../public/lottie/finding.json";
+import { ClientGameState } from "../../../backstab/bindings/ClientGameState";
 interface FindingPlayersProps {
-  game: NonNullable<GameResponse>;
+  game: Extract<ClientGameState, { state: "InGame" }>["content"];
 }
 
 export default function FindingPlayers(props: FindingPlayersProps) {
