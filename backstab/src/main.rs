@@ -7,11 +7,14 @@ use rocket::{response::status::BadRequest, State};
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
+use ts_rs::TS;
 
 struct SessionsMap(RwLock<HashMap<SessionUuid, Arc<Mutex<Session>>>>);
 
 type SessionUuid = u128;
 
+#[derive(TS)]
+#[ts(export)]
 struct Session {
     creator_identity: ClientIdentity,
     players: Vec<ClientIdentity>,
@@ -26,7 +29,13 @@ impl Session {
     }
 
     fn add_player(&mut self, identity: ClientIdentity) {
-        if self.players.iter().filter(|i| i.0 == identity.0).next().is_none() {
+        if self
+            .players
+            .iter()
+            .filter(|i| i.0 == identity.0)
+            .next()
+            .is_none()
+        {
             self.players.push(identity);
         }
     }
@@ -43,7 +52,8 @@ struct ClientGameStateView {
     number_of_players: u8,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, TS)]
+#[ts(export)]
 struct ClientIdentity(u128);
 
 #[rocket::async_trait]
@@ -51,7 +61,9 @@ impl<'v> rocket::form::FromFormField<'v> for ClientIdentity {
     fn from_value(field: rocket::form::ValueField<'v>) -> rocket::form::Result<'v, Self> {
         match u128::from_str(field.value) {
             Ok(identity) => Ok(ClientIdentity(identity)),
-            Err(_) => Err(rocket::form::Error::validation("could not parse client identity"))?,
+            Err(_) => Err(rocket::form::Error::validation(
+                "could not parse client identity",
+            ))?,
         }
     }
 
@@ -66,7 +78,11 @@ impl<'v> rocket::form::FromFormField<'v> for ClientIdentity {
 /// Creates a new session and sends the random code to the client.
 /// Once created, client subscribes to the session's websocket.
 #[get("/create-room?<identity>")]
-fn create_room(identity: ClientIdentity, sessions: &State<SessionsMap>, ws: ws::WebSocket) -> ws::Channel<'static> {
+fn create_room(
+    identity: ClientIdentity,
+    sessions: &State<SessionsMap>,
+    ws: ws::WebSocket,
+) -> ws::Channel<'static> {
     let random_code: u128 = 123456789; // TODO actually generate this randomly
     let session = Arc::new(Mutex::new(Session::new_with_creator(identity)));
     sessions
@@ -100,7 +116,11 @@ fn join_room(
     }
 }
 
-fn manage_game_socket(ws: ws::WebSocket, identity: ClientIdentity, session: Arc<Mutex<Session>>) -> ws::Channel<'static> {
+fn manage_game_socket(
+    ws: ws::WebSocket,
+    identity: ClientIdentity,
+    session: Arc<Mutex<Session>>,
+) -> ws::Channel<'static> {
     use rocket::futures::{SinkExt, StreamExt};
     use ws::Message;
 
@@ -109,7 +129,10 @@ fn manage_game_socket(ws: ws::WebSocket, identity: ClientIdentity, session: Arc<
             let _identity = identity;
             let session = session;
             let gamestate = session.lock().unwrap().get_game_state_view();
-            stream.send(Message::Text(serde_json::to_string(&gamestate).unwrap())).await.unwrap();
+            stream
+                .send(Message::Text(serde_json::to_string(&gamestate).unwrap()))
+                .await
+                .unwrap();
             while let Some(message) = stream.next().await {
                 let _ = stream.send(message?).await;
             }
