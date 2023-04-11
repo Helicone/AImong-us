@@ -3,6 +3,9 @@
 extern crate rocket;
 
 use rocket::{response::status::BadRequest, State};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use ws::Message;
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -20,7 +23,9 @@ struct Session {
 }
 
 impl Session {
-    fn new_with_creator(creator_identity: ClientIdentity) -> (Self, async_broadcast::Receiver<ClientGameStateView>) {
+    fn new_with_creator(
+        creator_identity: ClientIdentity,
+    ) -> (Self, async_broadcast::Receiver<ClientGameStateView>) {
         let (sender, receiver) = async_broadcast::broadcast(1);
         (
             Self {
@@ -28,7 +33,7 @@ impl Session {
                 players: vec![creator_identity],
                 broadcast: sender,
             },
-            receiver
+            receiver,
         )
     }
 
@@ -47,6 +52,7 @@ impl Session {
     fn get_game_state_view(&self) -> ClientGameStateView {
         ClientGameStateView {
             number_of_players: self.players.len() as u8,
+            game_state: ClientGameState::Lobby,
         }
     }
 }
@@ -56,6 +62,32 @@ impl Session {
 #[derive(serde::Serialize, Clone)]
 struct ClientGameStateView {
     number_of_players: u8,
+    game_state: ClientGameState,
+}
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(serde::Serialize, Clone)]
+#[serde(tag = "state", content = "content")]
+enum ClientGameState {
+    Lobby,
+    InGame(InGameClientGameState),
+}
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(serde::Serialize, Clone)]
+struct InGameClientGameState {
+    players: Vec<u128>,
+}
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "state", content = "content")]
+enum ClientResponse {
+    StartGame,
+    AnswerQuestion { answer: String },
 }
 
 #[derive(Clone, Copy)]
@@ -121,9 +153,25 @@ fn join_room(
             session.add_player(identity);
             receiver = session.broadcast.new_receiver();
         }
-        Ok(manage_game_socket(ws, identity, Arc::clone(session), receiver))
+        Ok(manage_game_socket(
+            ws,
+            identity,
+            Arc::clone(session),
+            receiver,
+        ))
     } else {
         return Err(BadRequest("session does not exist".to_string()));
+    }
+}
+impl TryFrom<Message> for ClientResponse {
+    type Error = serde_json::Error;
+
+    fn try_from(message: Message) -> serde_json::Result<Self> {
+        use serde::de::Error;
+        match message {
+            Message::Text(text) => serde_json::from_str(&text),
+            _ => Err(serde_json::Error::custom("Invalid message format")),
+        }
     }
 }
 
@@ -134,7 +182,6 @@ fn manage_game_socket(
     receiver: async_broadcast::Receiver<ClientGameStateView>,
 ) -> ws::Channel<'static> {
     use rocket::futures::{SinkExt, StreamExt};
-    use ws::Message;
 
     ws.channel(move |stream| {
         Box::pin(async move {
@@ -163,10 +210,26 @@ fn manage_game_socket(
             while let Some(message) = events_stream.next().await {
                 match message {
                     UnifiedStreamResult::FromWs(m) => {
-                        let _ = sink.send(m?).await;
+                        let p_result: Result<ClientResponse, _> = m.unwrap().try_into();
+
+                        if let Ok(p_result) = p_result {
+                            match p_result {
+                                ClientResponse::StartGame => {
+                                    println!("start game");
+                                }
+                                ClientResponse::AnswerQuestion { answer } => {
+                                    println!("answer: {:?}", answer);
+                                }
+                            };
+                        } else {
+                            println!("p_result: {:?}", p_result);
+                            let _ = sink.send(Message::Text("Ran into error".to_owned())).await;
+                        }
                     }
                     UnifiedStreamResult::FromServer(m) => {
-                        let _ = sink.send(Message::Text(serde_json::to_string(&m).unwrap())).await;
+                        let _ = sink
+                            .send(Message::Text(serde_json::to_string(&m).unwrap()))
+                            .await;
                     }
                 }
             }
