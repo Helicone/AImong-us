@@ -6,9 +6,9 @@ use rocket::{http::Status, request::Outcome, response::status::BadRequest, Reque
 
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::{Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
-struct SessionsMap(RwLock<HashMap<SessionUuid, Mutex<Session>>>);
+struct SessionsMap(RwLock<HashMap<SessionUuid, Arc<Mutex<Session>>>>);
 
 type SessionUuid = u128;
 
@@ -59,26 +59,29 @@ impl<'r> rocket::request::FromRequest<'r> for ClientIdentity {
 // the client.
 
 /// Creates a new session and sends the random code to the client.
-/// Once created, client should subscribe to the session's websocket.
+/// Once created, client subscribes to the session's websocket.
 #[get("/create-room")]
-fn create_room(identity: ClientIdentity, sessions: &State<SessionsMap>) {
+fn create_room(identity: ClientIdentity, sessions: &State<SessionsMap>, ws: ws::WebSocket) -> ws::Channel<'static> {
     let random_code: u128 = 123456789; // TODO actually generate this randomly
-    let session = Session::new_with_creator(identity);
+    let session = Arc::new(Mutex::new(Session::new_with_creator(identity)));
     sessions
         .0
         .write()
         .unwrap()
-        .insert(random_code, Mutex::new(session));
+        .insert(random_code, Arc::clone(&session));
+
+    manage_game_socket(ws, identity, session)
 }
 
 /// Joins an existing session using its random code.
-/// Once joined, client should subscribe to the session's websocket.
+/// Once joined, client subscribes to the session's websocket.
 #[get("/join-room?<room>")]
 fn join_room(
     identity: ClientIdentity,
     room: String,
     sessions: &State<SessionsMap>,
-) -> Result<(), BadRequest<String>> {
+    ws: ws::WebSocket,
+) -> Result<ws::Channel<'static>, BadRequest<String>> {
     let random_code = match u128::from_str(&room) {
         Ok(code) => code,
         Err(_) => return Err(BadRequest("couldn't parse room ID".to_string())),
@@ -86,18 +89,19 @@ fn join_room(
     let sessions = sessions.0.read().unwrap();
     if let Some(session) = sessions.get(&random_code) {
         session.lock().unwrap().add_player(identity);
-        Ok(())
+        Ok(manage_game_socket(ws, identity, Arc::clone(session)))
     } else {
-        Err(BadRequest("session does not exist".to_string()))
+        return Err(BadRequest("session does not exist".to_string()));
     }
 }
 
-#[get("/echo")]
-fn echo_channel(ws: ws::WebSocket) -> ws::Channel<'static> {
+fn manage_game_socket(ws: ws::WebSocket, identity: ClientIdentity, session: Arc<Mutex<Session>>) -> ws::Channel<'static> {
     use rocket::futures::{SinkExt, StreamExt};
 
     ws.channel(move |mut stream| {
         Box::pin(async move {
+            let _identity = identity;
+            let _session = session;
             while let Some(message) = stream.next().await {
                 let _ = stream.send(message?).await;
             }
@@ -112,5 +116,5 @@ fn rocket() -> _ {
     let sessions = SessionsMap(RwLock::new(HashMap::new()));
     rocket::build()
         .manage(sessions)
-        .mount("/", routes![create_room, join_room, echo_channel])
+        .mount("/", routes![create_room, join_room])
 }
