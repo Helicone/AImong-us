@@ -92,7 +92,7 @@ fn join_room(
     }
 }
 
-#[get("/echo?channel")]
+#[get("/echo")]
 fn echo_channel(ws: ws::WebSocket) -> ws::Channel<'static> {
     use rocket::futures::{SinkExt, StreamExt};
 
@@ -112,5 +112,5 @@ fn rocket() -> _ {
     let sessions = SessionsMap(RwLock::new(HashMap::new()));
     rocket::build()
         .manage(sessions)
-        .mount("/", routes![create_room, join_room])
+        .mount("/", routes![create_room, join_room, echo_stream])
 }
