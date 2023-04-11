@@ -13,8 +13,6 @@ struct SessionsMap(RwLock<HashMap<SessionUuid, Arc<Mutex<Session>>>>);
 
 type SessionUuid = u128;
 
-#[derive(TS)]
-#[ts(export)]
 struct Session {
     creator_identity: ClientIdentity,
     players: Vec<ClientIdentity>,
@@ -47,13 +45,14 @@ impl Session {
     }
 }
 
+#[derive(TS)]
+#[ts(export)]
 #[derive(serde::Serialize)]
 struct ClientGameStateView {
     number_of_players: u8,
 }
 
-#[derive(Clone, Copy, TS)]
-#[ts(export)]
+#[derive(Clone, Copy)]
 struct ClientIdentity(u128);
 
 #[rocket::async_trait]
