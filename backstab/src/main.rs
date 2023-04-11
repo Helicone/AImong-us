@@ -16,14 +16,20 @@ type SessionUuid = u128;
 struct Session {
     creator_identity: ClientIdentity,
     players: Vec<ClientIdentity>,
+    broadcast: async_broadcast::Sender<ClientGameStateView>,
 }
 
 impl Session {
-    fn new_with_creator(creator_identity: ClientIdentity) -> Self {
-        Self {
-            creator_identity,
-            players: vec![creator_identity],
-        }
+    fn new_with_creator(creator_identity: ClientIdentity) -> (Self, async_broadcast::Receiver<ClientGameStateView>) {
+        let (sender, receiver) = async_broadcast::broadcast(1);
+        (
+            Self {
+                creator_identity,
+                players: vec![creator_identity],
+                broadcast: sender,
+            },
+            receiver
+        )
     }
 
     fn add_player(&mut self, identity: ClientIdentity) {
@@ -47,7 +53,7 @@ impl Session {
 
 #[derive(TS)]
 #[ts(export)]
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Clone)]
 struct ClientGameStateView {
     number_of_players: u8,
 }
@@ -83,14 +89,15 @@ fn create_room(
     ws: ws::WebSocket,
 ) -> ws::Channel<'static> {
     let random_code: u128 = 123456789; // TODO actually generate this randomly
-    let session = Arc::new(Mutex::new(Session::new_with_creator(identity)));
+    let (session, receiver) = Session::new_with_creator(identity);
+    let session = Arc::new(Mutex::new(session));
     sessions
         .0
         .write()
         .unwrap()
         .insert(random_code, Arc::clone(&session));
 
-    manage_game_socket(ws, identity, session)
+    manage_game_socket(ws, identity, session, receiver)
 }
 
 /// Joins an existing session using its random code.
@@ -108,8 +115,13 @@ fn join_room(
     };
     let sessions = sessions.0.read().unwrap();
     if let Some(session) = sessions.get(&random_code) {
-        session.lock().unwrap().add_player(identity);
-        Ok(manage_game_socket(ws, identity, Arc::clone(session)))
+        let receiver;
+        {
+            let mut session = session.lock().unwrap();
+            session.add_player(identity);
+            receiver = session.broadcast.new_receiver();
+        }
+        Ok(manage_game_socket(ws, identity, Arc::clone(session), receiver))
     } else {
         return Err(BadRequest("session does not exist".to_string()));
     }
@@ -119,21 +131,44 @@ fn manage_game_socket(
     ws: ws::WebSocket,
     identity: ClientIdentity,
     session: Arc<Mutex<Session>>,
+    receiver: async_broadcast::Receiver<ClientGameStateView>,
 ) -> ws::Channel<'static> {
     use rocket::futures::{SinkExt, StreamExt};
     use ws::Message;
 
-    ws.channel(move |mut stream| {
+    ws.channel(move |stream| {
         Box::pin(async move {
             let _identity = identity;
             let session = session;
-            let gamestate = session.lock().unwrap().get_game_state_view();
-            stream
-                .send(Message::Text(serde_json::to_string(&gamestate).unwrap()))
-                .await
-                .unwrap();
-            while let Some(message) = stream.next().await {
-                let _ = stream.send(message?).await;
+            let broadcast = session.lock().unwrap().broadcast.clone();
+
+            {
+                // Send new game state to all clients, including this one
+                let initial_gamestate = session.lock().unwrap().get_game_state_view();
+                broadcast.broadcast(initial_gamestate).await.unwrap();
+            }
+
+            let (mut sink, stream) = stream.split();
+
+            enum UnifiedStreamResult {
+                FromWs(Result<Message, ws::result::Error>),
+                FromServer(ClientGameStateView),
+            }
+
+            let mut events_stream = futures::stream_select!(
+                stream.map(|e| UnifiedStreamResult::FromWs(e)),
+                receiver.map(|e| UnifiedStreamResult::FromServer(e))
+            );
+
+            while let Some(message) = events_stream.next().await {
+                match message {
+                    UnifiedStreamResult::FromWs(m) => {
+                        let _ = sink.send(m?).await;
+                    }
+                    UnifiedStreamResult::FromServer(m) => {
+                        let _ = sink.send(Message::Text(serde_json::to_string(&m).unwrap())).await;
+                    }
+                }
             }
 
             Ok(())
