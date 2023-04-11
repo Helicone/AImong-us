@@ -45,24 +45,16 @@ struct ClientGameStateView {
 struct ClientIdentity(u128);
 
 #[rocket::async_trait]
-impl<'r> rocket::request::FromRequest<'r> for ClientIdentity {
-    type Error = String;
-
-    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        if let Some(identity) = request.headers().get("X-Identity").next() {
-            match u128::from_str(identity) {
-                Ok(identity) => Outcome::Success(ClientIdentity(identity)),
-                Err(_) => Outcome::Failure((
-                    Status::BadRequest,
-                    "could not parse client identity".to_string(),
-                )),
-            }
-        } else {
-            Outcome::Failure((
-                Status::BadRequest,
-                "missing client identity (X-Identity header)".to_string(),
-            ))
+impl<'v> rocket::form::FromFormField<'v> for ClientIdentity {
+    fn from_value(field: rocket::form::ValueField<'v>) -> rocket::form::Result<'v, Self> {
+        match u128::from_str(field.value) {
+            Ok(identity) => Ok(ClientIdentity(identity)),
+            Err(_) => Err(rocket::form::Error::validation("could not parse client identity"))?,
         }
+    }
+
+    fn default() -> Option<Self> {
+        None
     }
 }
 
@@ -71,7 +63,7 @@ impl<'r> rocket::request::FromRequest<'r> for ClientIdentity {
 
 /// Creates a new session and sends the random code to the client.
 /// Once created, client subscribes to the session's websocket.
-#[get("/create-room")]
+#[get("/create-room?<identity>")]
 fn create_room(identity: ClientIdentity, sessions: &State<SessionsMap>, ws: ws::WebSocket) -> ws::Channel<'static> {
     let random_code: u128 = 123456789; // TODO actually generate this randomly
     let session = Arc::new(Mutex::new(Session::new_with_creator(identity)));
@@ -86,7 +78,7 @@ fn create_room(identity: ClientIdentity, sessions: &State<SessionsMap>, ws: ws::
 
 /// Joins an existing session using its random code.
 /// Once joined, client subscribes to the session's websocket.
-#[get("/join-room?<room>")]
+#[get("/join-room?<identity>&<room>")]
 fn join_room(
     identity: ClientIdentity,
     room: String,
