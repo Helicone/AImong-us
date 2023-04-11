@@ -2,7 +2,7 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::{http::Status, request::Outcome, response::status::BadRequest, Request, State};
+use rocket::{response::status::BadRequest, State};
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -26,7 +26,9 @@ impl Session {
     }
 
     fn add_player(&mut self, identity: ClientIdentity) {
-        self.players.push(identity);
+        if self.players.iter().filter(|i| i.0 == identity.0).next().is_none() {
+            self.players.push(identity);
+        }
     }
 
     fn get_game_state_view(&self) -> ClientGameStateView {
