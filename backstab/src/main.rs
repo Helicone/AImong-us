@@ -112,5 +112,5 @@ fn rocket() -> _ {
     let sessions = SessionsMap(RwLock::new(HashMap::new()));
     rocket::build()
         .manage(sessions)
-        .mount("/", routes![create_room, join_room, echo_stream])
+        .mount("/", routes![create_room, join_room, echo_channel])
 }
