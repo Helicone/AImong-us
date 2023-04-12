@@ -1,4 +1,4 @@
-const AVATARS = [
+export const AVATARS = [
   { emoji: "🐲", name: "Dragon", color: "bg-red-400" },
   { emoji: "🐻", name: "Bear", color: "bg-orange-400" },
   { emoji: "🐙", name: "Octopus", color: "bg-amber-400" },

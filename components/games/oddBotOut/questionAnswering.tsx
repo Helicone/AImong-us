@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { MyClientGameStateView } from "../../../backstab/bindings/ExtractClientState";
 import {
   NUM_PLAYERS,
   NUM_QUESTIONS_PER_GAME,
@@ -8,7 +9,7 @@ import { GameStates } from "../../../lib/states";
 import { GameResponse } from "../../../pages/api/odd-bot-out/game";
 
 interface QuestionAnsweringProps {
-  game: NonNullable<GameResponse>;
+  game: MyClientGameStateView<"InGame">;
 }
 function Timer(props: { totalTime: number; timeStarted: number }) {
   const { totalTime, timeStarted } = props;

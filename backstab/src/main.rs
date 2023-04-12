@@ -2,9 +2,15 @@
 #[macro_use]
 extern crate rocket;
 
+use futures::stream::SplitSink;
+use objects::client_to_server::{ClientResponse, LobbyResponses};
+use objects::server_to_client::{ClientGameState, ClientGameStateView, ClientIdentity};
+use objects::server_to_server::{ServerGameStateView, ServerMessage};
 use rocket::{response::status::BadRequest, State};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+
+mod objects;
+
+use ws::stream::DuplexStream;
 use ws::Message;
 
 use std::collections::HashMap;
@@ -19,13 +25,13 @@ type SessionUuid = u128;
 struct Session {
     creator_identity: ClientIdentity,
     players: Vec<ClientIdentity>,
-    broadcast: async_broadcast::Sender<ClientGameStateView>,
+    broadcast: async_broadcast::Sender<ServerMessage>,
 }
 
 impl Session {
     fn new_with_creator(
         creator_identity: ClientIdentity,
-    ) -> (Self, async_broadcast::Receiver<ClientGameStateView>) {
+    ) -> (Self, async_broadcast::Receiver<ServerMessage>) {
         let (sender, receiver) = async_broadcast::broadcast(1);
         (
             Self {
@@ -49,49 +55,12 @@ impl Session {
         }
     }
 
-    fn get_game_state_view(&self) -> ClientGameStateView {
-        ClientGameStateView {
-            number_of_players: self.players.len() as u8,
-            game_state: ClientGameState::Lobby,
+    fn get_game_state_view(&self) -> ServerGameStateView {
+        ServerGameStateView {
+            players: self.players.clone(),
         }
     }
 }
-
-#[derive(TS)]
-#[ts(export)]
-#[derive(serde::Serialize, Clone)]
-struct ClientGameStateView {
-    number_of_players: u8,
-    game_state: ClientGameState,
-}
-
-#[derive(TS)]
-#[ts(export)]
-#[derive(serde::Serialize, Clone)]
-#[serde(tag = "state", content = "content")]
-enum ClientGameState {
-    Lobby,
-    InGame(InGameClientGameState),
-}
-
-#[derive(TS)]
-#[ts(export)]
-#[derive(serde::Serialize, Clone)]
-struct InGameClientGameState {
-    players: Vec<u128>,
-}
-
-#[derive(TS)]
-#[ts(export)]
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "state", content = "content")]
-enum ClientResponse {
-    StartGame,
-    AnswerQuestion { answer: String },
-}
-
-#[derive(Clone, Copy)]
-struct ClientIdentity(u128);
 
 #[rocket::async_trait]
 impl<'v> rocket::form::FromFormField<'v> for ClientIdentity {
@@ -150,6 +119,8 @@ fn join_room(
         let receiver;
         {
             let mut session = session.lock().unwrap();
+            println!("adding player");
+            println!("current players: {:#?}", session.players);
             session.add_player(identity);
             receiver = session.broadcast.new_receiver();
         }
@@ -179,9 +150,9 @@ fn manage_game_socket(
     ws: ws::WebSocket,
     identity: ClientIdentity,
     session: Arc<Mutex<Session>>,
-    receiver: async_broadcast::Receiver<ClientGameStateView>,
+    receiver: async_broadcast::Receiver<ServerMessage>,
 ) -> ws::Channel<'static> {
-    use rocket::futures::{SinkExt, StreamExt};
+    use rocket::futures::StreamExt;
 
     ws.channel(move |stream| {
         Box::pin(async move {
@@ -192,15 +163,13 @@ fn manage_game_socket(
             {
                 // Send new game state to all clients, including this one
                 let initial_gamestate = session.lock().unwrap().get_game_state_view();
-                broadcast.broadcast(initial_gamestate).await.unwrap();
+                broadcast
+                    .broadcast(ServerMessage::RefreshGameScreen(initial_gamestate))
+                    .await
+                    .unwrap();
             }
 
             let (mut sink, stream) = stream.split();
-
-            enum UnifiedStreamResult {
-                FromWs(Result<Message, ws::result::Error>),
-                FromServer(ClientGameStateView),
-            }
 
             let mut events_stream = futures::stream_select!(
                 stream.map(|e| UnifiedStreamResult::FromWs(e)),
@@ -208,35 +177,94 @@ fn manage_game_socket(
             );
 
             while let Some(message) = events_stream.next().await {
-                match message {
-                    UnifiedStreamResult::FromWs(m) => {
-                        let p_result: Result<ClientResponse, _> = m.unwrap().try_into();
-
-                        if let Ok(p_result) = p_result {
-                            match p_result {
-                                ClientResponse::StartGame => {
-                                    println!("start game");
-                                }
-                                ClientResponse::AnswerQuestion { answer } => {
-                                    println!("answer: {:?}", answer);
-                                }
-                            };
-                        } else {
-                            println!("p_result: {:?}", p_result);
-                            let _ = sink.send(Message::Text("Ran into error".to_owned())).await;
-                        }
-                    }
-                    UnifiedStreamResult::FromServer(m) => {
-                        let _ = sink
-                            .send(Message::Text(serde_json::to_string(&m).unwrap()))
-                            .await;
-                    }
-                }
+                handle_incoming_message(message, &session, &mut sink).await;
             }
 
             Ok(())
         })
     })
+}
+
+enum UnifiedStreamResult {
+    FromWs(Result<Message, ws::result::Error>),
+    FromServer(ServerMessage),
+}
+async fn handle_incoming_message(
+    message: UnifiedStreamResult,
+    session: &Arc<Mutex<Session>>,
+    sink: &mut SplitSink<DuplexStream, Message>,
+) {
+    use rocket::futures::SinkExt;
+    match message {
+        UnifiedStreamResult::FromWs(m) => {
+            let p_result: Result<ClientResponse, _> = m.unwrap().try_into();
+            if let Ok(p_result) = p_result {
+                handle_client_message(p_result, session.clone(), &mut *sink).await;
+            } else {
+                println!("Error parsing p_result: {:?}", p_result);
+                let _ = sink.send(Message::Text("Ran into error".to_owned())).await;
+            }
+        }
+        UnifiedStreamResult::FromServer(m) => {
+            handle_server_message(m, sink).await;
+        }
+    }
+}
+
+async fn handle_server_message(m: ServerMessage, sink: &mut SplitSink<DuplexStream, Message>) {
+    use rocket::futures::SinkExt;
+    match (m) {
+        ServerMessage::RefreshGameScreen(game_state) => {
+            let _ = sink
+                .send(Message::Text(
+                    serde_json::to_string(&ClientGameStateView {
+                        game_state: ClientGameState::Lobby,
+                        number_of_players: game_state.players.len() as u8,
+                    })
+                    .unwrap(),
+                ))
+                .await;
+        }
+        ServerMessage::NewPlayerJoined(_) => {}
+    }
+}
+
+async fn handle_client_message(
+    message: ClientResponse,
+    session: Arc<Mutex<Session>>,
+    sink: &mut SplitSink<DuplexStream, Message>,
+) {
+    use rocket::futures::SinkExt;
+    let server_gamestate = {
+        // Send new game state to all clients, including this one
+        let initial_gamestate = session.lock().unwrap().get_game_state_view();
+        initial_gamestate
+    };
+
+    let _ = sink
+        .send(Message::Text(
+            serde_json::to_string(&ClientGameStateView {
+                game_state: ClientGameState::Lobby,
+                number_of_players: server_gamestate.players.len() as u8,
+            })
+            .unwrap(),
+        ))
+        .await;
+    match message {
+        ClientResponse::Lobby(LobbyResponses::StartGame) => {
+            // let mut session = session.lock().unwrap();
+            let broadcast = session.lock().unwrap().broadcast.clone();
+            {
+                // Send new game state to all clients, including this one
+                let initial_gamestate = session.lock().unwrap().get_game_state_view();
+                broadcast
+                    .broadcast(ServerMessage::RefreshGameScreen(initial_gamestate))
+                    .await
+                    .unwrap();
+            }
+        }
+        ClientResponse::InGame(_) => {}
+    }
 }
 
 #[rocket::launch]
