@@ -13,7 +13,7 @@ pub struct ClientGameStateView {
 #[derive(serde::Serialize, Clone)]
 #[serde(tag = "state", content = "content")]
 pub enum ClientGameState {
-    Lobby,
+    Lobby { is_host: bool },
     InGame(InGameClientGameState),
 }
 
@@ -24,5 +24,5 @@ pub struct InGameClientGameState {
     pub players: Vec<u128>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ClientIdentity(pub u128);

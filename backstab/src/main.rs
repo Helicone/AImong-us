@@ -60,6 +60,10 @@ impl Session {
             players: self.players.clone(),
         }
     }
+
+    fn creator_identity(&self) -> ClientIdentity {
+        self.creator_identity
+    }
 }
 
 #[rocket::async_trait]
@@ -177,7 +181,7 @@ fn manage_game_socket(
             );
 
             while let Some(message) = events_stream.next().await {
-                handle_incoming_message(message, &session, &mut sink).await;
+                handle_incoming_message(identity, message, &session, &mut sink).await;
             }
 
             Ok(())
@@ -189,7 +193,9 @@ enum UnifiedStreamResult {
     FromWs(Result<Message, ws::result::Error>),
     FromServer(ServerMessage),
 }
+
 async fn handle_incoming_message(
+    identity: ClientIdentity,
     message: UnifiedStreamResult,
     session: &Arc<Mutex<Session>>,
     sink: &mut SplitSink<DuplexStream, Message>,
@@ -199,26 +205,36 @@ async fn handle_incoming_message(
         UnifiedStreamResult::FromWs(m) => {
             let p_result: Result<ClientResponse, _> = m.unwrap().try_into();
             if let Ok(p_result) = p_result {
-                handle_client_message(p_result, session.clone(), &mut *sink).await;
+                handle_client_message(identity, p_result, session.clone(), sink).await;
             } else {
                 println!("Error parsing p_result: {:?}", p_result);
                 let _ = sink.send(Message::Text("Ran into error".to_owned())).await;
             }
         }
         UnifiedStreamResult::FromServer(m) => {
-            handle_server_message(m, sink).await;
+            handle_server_message(identity, m, session.clone(), sink).await;
         }
     }
 }
 
-async fn handle_server_message(m: ServerMessage, sink: &mut SplitSink<DuplexStream, Message>) {
+async fn handle_server_message(
+    identity: ClientIdentity,
+    m: ServerMessage,
+    session: Arc<Mutex<Session>>,
+    sink: &mut SplitSink<DuplexStream, Message>,
+) {
     use rocket::futures::SinkExt;
-    match (m) {
+    println!("server message:");
+    let creator_id = session.lock().unwrap().creator_identity();
+
+    match m {
         ServerMessage::RefreshGameScreen(game_state) => {
             let _ = sink
                 .send(Message::Text(
                     serde_json::to_string(&ClientGameStateView {
-                        game_state: ClientGameState::Lobby,
+                        game_state: ClientGameState::Lobby {
+                            is_host: creator_id == identity,
+                        },
                         number_of_players: game_state.players.len() as u8,
                     })
                     .unwrap(),
@@ -230,21 +246,21 @@ async fn handle_server_message(m: ServerMessage, sink: &mut SplitSink<DuplexStre
 }
 
 async fn handle_client_message(
+    identity: ClientIdentity,
     message: ClientResponse,
     session: Arc<Mutex<Session>>,
     sink: &mut SplitSink<DuplexStream, Message>,
 ) {
     use rocket::futures::SinkExt;
-    let server_gamestate = {
-        // Send new game state to all clients, including this one
-        let initial_gamestate = session.lock().unwrap().get_game_state_view();
-        initial_gamestate
-    };
+    let server_gamestate = session.lock().unwrap().get_game_state_view();
+    let creator_id = session.lock().unwrap().creator_identity();
 
     let _ = sink
         .send(Message::Text(
             serde_json::to_string(&ClientGameStateView {
-                game_state: ClientGameState::Lobby,
+                game_state: ClientGameState::Lobby {
+                    is_host: creator_id == identity,
+                },
                 number_of_players: server_gamestate.players.len() as u8,
             })
             .unwrap(),

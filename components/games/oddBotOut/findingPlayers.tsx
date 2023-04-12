@@ -14,9 +14,6 @@ import { GameStateProps } from "../../../pages/game";
 
 export default function FindingPlayers(props: GameStateProps<"Lobby">) {
   const { game, sendMessage } = props;
-  sendMessage({
-    Lobby: "StartGame",
-  });
 
   return (
     <Col className="h-full items-center">
@@ -42,6 +39,20 @@ export default function FindingPlayers(props: GameStateProps<"Lobby">) {
         />
       </Row>
       <div className="text-xl"></div>
+      {game.game_state.content.is_host && (
+        <div className="text-xl">
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => {
+              sendMessage({
+                Lobby: "StartGame",
+              });
+            }}
+          >
+            Start game
+          </button>
+        </div>
+      )}
       <div className="text-sm right-0 bottom-0">
         {game.number_of_players} / {NUM_PLAYERS}
       </div>
