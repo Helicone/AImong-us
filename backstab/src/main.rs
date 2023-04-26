@@ -89,22 +89,28 @@ impl Session {
 
     fn get_game_state_view(&self, identity: ClientIdentity) -> ClientGameStateView {
         match self.stage {
-            GameStage::NotStarted => {
-                ClientGameStateView {
-                    number_of_players: self.players.len() as u8,
-                    game_state: ClientGameState::Lobby { is_host: identity == self.creator_identity },
-                }
-            }
+            GameStage::NotStarted => ClientGameStateView {
+                number_of_players: self.players.len() as u8,
+                game_state: ClientGameState::Lobby {
+                    is_host: identity == self.creator_identity,
+                },
+                current_turn: self.turns.len() as u8,
+            },
             GameStage::Answering => {
                 let turn = &self.turns[self.turns.len() - 1];
                 ClientGameStateView {
                     game_state: ClientGameState::Answering {
                         question: turn.question.clone(),
-                        started_at: turn.started_at.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64,
+                        started_at: turn
+                            .started_at
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap()
+                            .as_millis() as u64,
                     },
                     number_of_players: self.players.len() as u8,
+                    current_turn: self.turns.len() as u8,
                 }
-            },
+            }
             GameStage::Voting => todo!(),
             GameStage::Reviewing => todo!(),
             GameStage::GameOver => todo!(),
@@ -215,10 +221,7 @@ fn manage_game_socket(
             };
 
             // Send new game state to all clients, including this one
-            broadcast
-                .broadcast(ServerMessage)
-                .await
-                .unwrap();
+            broadcast.broadcast(ServerMessage).await.unwrap();
 
             let (mut sink, stream) = stream.split();
 
@@ -282,10 +285,7 @@ async fn handle_server_message(
     assert!(matches!(m, ServerMessage));
 
     let _ = sink
-        .send(Message::Text(
-            serde_json::to_string(&game_state)
-            .unwrap(),
-        ))
+        .send(Message::Text(serde_json::to_string(&game_state).unwrap()))
         .await;
 }
 
@@ -314,20 +314,19 @@ async fn handle_client_message(
                 }
                 session.stage = GameStage::Answering;
                 session.turns.push(Turn::new());
-                (session.broadcast.clone(), session.get_game_state_view(identity))
+                (
+                    session.broadcast.clone(),
+                    session.get_game_state_view(identity),
+                )
             };
             // Send new game state to all clients, including this one
-            broadcast
-                .broadcast(ServerMessage)
-                .await
-                .unwrap();
+            broadcast.broadcast(ServerMessage).await.unwrap();
 
             let _ = sink
                 .send(Message::Text(serde_json::to_string(&game_state).unwrap()))
                 .await;
         }
-        ClientResponse::SubmitAnswer(answer) => {
-        }
+        ClientResponse::SubmitAnswer(answer) => {}
     }
 }
 
