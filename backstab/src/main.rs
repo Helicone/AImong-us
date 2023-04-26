@@ -3,9 +3,9 @@
 extern crate rocket;
 
 use futures::stream::SplitSink;
-use objects::client_to_server::{ClientResponse, LobbyResponses};
-use objects::server_to_client::{ClientGameState, ClientGameStateView, ClientIdentity};
-use objects::server_to_server::{ServerGameStateView, ServerMessage};
+use objects::client_to_server::ClientResponse;
+use objects::server_to_client::{ClientGameState, ClientGameStateView};
+use objects::server_to_server::ServerMessage;
 use rocket::{response::status::BadRequest, State};
 
 mod objects;
@@ -19,12 +19,43 @@ use std::sync::{Arc, Mutex, RwLock};
 
 struct SessionsMap(RwLock<HashMap<SessionUuid, Arc<Mutex<Session>>>>);
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ClientIdentity(pub u128);
+
 type SessionUuid = u128;
+
+struct Turn {
+    question: String,
+    started_at: std::time::SystemTime,
+    answers: Vec<Option<String>>,
+    votes: Vec<Option<u8>>,
+}
+
+impl Turn {
+    fn new() -> Self {
+        Self {
+            question: "How many TODOs could a TODO do if a TODO could do TODOs?".to_string(),
+            started_at: std::time::SystemTime::now(),
+            answers: vec![],
+            votes: vec![],
+        }
+    }
+}
+
+enum GameStage {
+    NotStarted,
+    Answering,
+    Voting,
+    Reviewing,
+    GameOver,
+}
 
 struct Session {
     creator_identity: ClientIdentity,
     players: Vec<ClientIdentity>,
     broadcast: async_broadcast::Sender<ServerMessage>,
+    turns: Vec<Turn>,
+    stage: GameStage,
 }
 
 impl Session {
@@ -37,6 +68,8 @@ impl Session {
                 creator_identity,
                 players: vec![creator_identity],
                 broadcast: sender,
+                turns: vec![],
+                stage: GameStage::NotStarted,
             },
             receiver,
         )
@@ -54,14 +87,28 @@ impl Session {
         }
     }
 
-    fn get_game_state_view(&self) -> ServerGameStateView {
-        ServerGameStateView {
-            players: self.players.clone(),
+    fn get_game_state_view(&self, identity: ClientIdentity) -> ClientGameStateView {
+        match self.stage {
+            GameStage::NotStarted => {
+                ClientGameStateView {
+                    number_of_players: self.players.len() as u8,
+                    game_state: ClientGameState::Lobby { is_host: identity == self.creator_identity },
+                }
+            }
+            GameStage::Answering => {
+                let turn = &self.turns[self.turns.len() - 1];
+                ClientGameStateView {
+                    game_state: ClientGameState::Answering {
+                        question: turn.question.clone(),
+                        started_at: turn.started_at.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64,
+                    },
+                    number_of_players: self.players.len() as u8,
+                }
+            },
+            GameStage::Voting => todo!(),
+            GameStage::Reviewing => todo!(),
+            GameStage::GameOver => todo!(),
         }
-    }
-
-    fn creator_identity(&self) -> ClientIdentity {
-        self.creator_identity
     }
 }
 
@@ -162,14 +209,14 @@ fn manage_game_socket(
             let _identity = identity;
             let session = session;
 
-            let (broadcast, initial_gamestate) = {
+            let broadcast = {
                 let session = session.lock().unwrap();
-                (session.broadcast.clone(), session.get_game_state_view())
+                session.broadcast.clone()
             };
 
             // Send new game state to all clients, including this one
             broadcast
-                .broadcast(ServerMessage::RefreshGameScreen(initial_gamestate))
+                .broadcast(ServerMessage)
                 .await
                 .unwrap();
 
@@ -225,24 +272,21 @@ async fn handle_server_message(
 ) {
     use rocket::futures::SinkExt;
     println!("server message:");
-    let creator_id = session.lock().unwrap().creator_identity();
 
-    match m {
-        ServerMessage::RefreshGameScreen(game_state) => {
-            let _ = sink
-                .send(Message::Text(
-                    serde_json::to_string(&ClientGameStateView {
-                        game_state: ClientGameState::Lobby {
-                            is_host: creator_id == identity,
-                        },
-                        number_of_players: game_state.players.len() as u8,
-                    })
-                    .unwrap(),
-                ))
-                .await;
-        }
-        ServerMessage::NewPlayerJoined(_) => {}
-    }
+    let game_state = {
+        let session = session.lock().unwrap();
+        session.get_game_state_view(identity)
+    };
+
+    // type safety 😎
+    assert!(matches!(m, ServerMessage));
+
+    let _ = sink
+        .send(Message::Text(
+            serde_json::to_string(&game_state)
+            .unwrap(),
+        ))
+        .await;
 }
 
 async fn handle_client_message(
@@ -252,35 +296,38 @@ async fn handle_client_message(
     sink: &mut SplitSink<DuplexStream, Message>,
 ) {
     use rocket::futures::SinkExt;
-    let (server_gamestate, creator_id) = {
+    let game_state = {
         let session = session.lock().unwrap();
-        (session.get_game_state_view(), session.creator_identity())
+        session.get_game_state_view(identity)
     };
 
     let _ = sink
-        .send(Message::Text(
-            serde_json::to_string(&ClientGameStateView {
-                game_state: ClientGameState::Lobby {
-                    is_host: creator_id == identity,
-                },
-                number_of_players: server_gamestate.players.len() as u8,
-            })
-            .unwrap(),
-        ))
+        .send(Message::Text(serde_json::to_string(&game_state).unwrap()))
         .await;
     match message {
-        ClientResponse::Lobby(LobbyResponses::StartGame) => {
-            // Send new game state to all clients, including this one
-            let (broadcast, initial_gamestate) = {
-                let session = session.lock().unwrap();
-                (session.broadcast.clone(), session.get_game_state_view())
+        ClientResponse::StartGame => {
+            let (broadcast, game_state) = {
+                let mut session = session.lock().unwrap();
+                if session.creator_identity != identity {
+                    // TODO send an error instead of silently exiting
+                    return;
+                }
+                session.stage = GameStage::Answering;
+                session.turns.push(Turn::new());
+                (session.broadcast.clone(), session.get_game_state_view(identity))
             };
+            // Send new game state to all clients, including this one
             broadcast
-                .broadcast(ServerMessage::RefreshGameScreen(initial_gamestate))
+                .broadcast(ServerMessage)
                 .await
                 .unwrap();
+
+            let _ = sink
+                .send(Message::Text(serde_json::to_string(&game_state).unwrap()))
+                .await;
         }
-        ClientResponse::InGame(_) => {}
+        ClientResponse::SubmitAnswer(answer) => {
+        }
     }
 }
 

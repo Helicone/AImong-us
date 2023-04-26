@@ -5,20 +5,7 @@ use ts_rs::TS;
 #[derive(TS)]
 #[ts(export)]
 #[derive(Serialize, Deserialize, Debug)]
-
 pub enum ClientResponse {
-    Lobby(LobbyResponses),
-    InGame(InGameClientResponses),
-}
-
-#[derive(TS)]
-#[ts(export)]
-#[derive(Serialize, Deserialize, Debug)]
-pub enum LobbyResponses {
     StartGame,
+    SubmitAnswer(String),
 }
-
-#[derive(TS)]
-#[ts(export)]
-#[derive(Serialize, Deserialize, Debug)]
-pub enum InGameClientResponses {}

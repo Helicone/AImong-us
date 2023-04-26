@@ -14,15 +14,5 @@ pub struct ClientGameStateView {
 #[serde(tag = "state", content = "content")]
 pub enum ClientGameState {
     Lobby { is_host: bool },
-    InGame(InGameClientGameState),
+    Answering { question: String, started_at: u64 }
 }
-
-#[derive(TS)]
-#[ts(export)]
-#[derive(serde::Serialize, Clone)]
-pub struct InGameClientGameState {
-    pub players: Vec<u128>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ClientIdentity(pub u128);
