@@ -16,7 +16,6 @@ use ws::Message;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
-use ts_rs::TS;
 
 struct SessionsMap(RwLock<HashMap<SessionUuid, Arc<Mutex<Session>>>>);
 
