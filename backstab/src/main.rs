@@ -161,16 +161,17 @@ fn manage_game_socket(
         Box::pin(async move {
             let _identity = identity;
             let session = session;
-            let broadcast = session.lock().unwrap().broadcast.clone();
 
-            {
-                // Send new game state to all clients, including this one
-                let initial_gamestate = session.lock().unwrap().get_game_state_view();
-                broadcast
-                    .broadcast(ServerMessage::RefreshGameScreen(initial_gamestate))
-                    .await
-                    .unwrap();
-            }
+            let (broadcast, initial_gamestate) = {
+                let session = session.lock().unwrap();
+                (session.broadcast.clone(), session.get_game_state_view())
+            };
+
+            // Send new game state to all clients, including this one
+            broadcast
+                .broadcast(ServerMessage::RefreshGameScreen(initial_gamestate))
+                .await
+                .unwrap();
 
             let (mut sink, stream) = stream.split();
 
@@ -251,8 +252,10 @@ async fn handle_client_message(
     sink: &mut SplitSink<DuplexStream, Message>,
 ) {
     use rocket::futures::SinkExt;
-    let server_gamestate = session.lock().unwrap().get_game_state_view();
-    let creator_id = session.lock().unwrap().creator_identity();
+    let (server_gamestate, creator_id) = {
+        let session = session.lock().unwrap();
+        (session.get_game_state_view(), session.creator_identity())
+    };
 
     let _ = sink
         .send(Message::Text(
@@ -267,16 +270,15 @@ async fn handle_client_message(
         .await;
     match message {
         ClientResponse::Lobby(LobbyResponses::StartGame) => {
-            // let mut session = session.lock().unwrap();
-            let broadcast = session.lock().unwrap().broadcast.clone();
-            {
-                // Send new game state to all clients, including this one
-                let initial_gamestate = session.lock().unwrap().get_game_state_view();
-                broadcast
-                    .broadcast(ServerMessage::RefreshGameScreen(initial_gamestate))
-                    .await
-                    .unwrap();
-            }
+            // Send new game state to all clients, including this one
+            let (broadcast, initial_gamestate) = {
+                let session = session.lock().unwrap();
+                (session.broadcast.clone(), session.get_game_state_view())
+            };
+            broadcast
+                .broadcast(ServerMessage::RefreshGameScreen(initial_gamestate))
+                .await
+                .unwrap();
         }
         ClientResponse::InGame(_) => {}
     }
