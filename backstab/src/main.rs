@@ -97,7 +97,7 @@ impl Session {
                 current_turn: self.turns.len() as u8,
             },
             GameStage::Answering => {
-                let turn = &self.turns[self.turns.len() - 1];
+                let turn = self.current_turn();
                 ClientGameStateView {
                     game_state: ClientGameState::Answering {
                         question: turn.question.clone(),
@@ -115,6 +115,20 @@ impl Session {
             GameStage::Reviewing => todo!(),
             GameStage::GameOver => todo!(),
         }
+    }
+
+    fn current_turn(&self) -> &Turn {
+        let i = self.turns.len() - 1;
+        &self.turns[i]
+    }
+
+    fn current_turn_mut(&mut self) -> &mut Turn {
+        let i = self.turns.len() - 1;
+        &mut self.turns[i]
+    }
+
+    fn player_index(&self, identity: &ClientIdentity) -> usize {
+        self.players.iter().position(|p| p == identity).expect("client identity missing from players")
     }
 }
 
@@ -293,41 +307,36 @@ async fn handle_client_message(
     identity: ClientIdentity,
     message: ClientResponse,
     session: Arc<Mutex<Session>>,
-    sink: &mut SplitSink<DuplexStream, Message>,
+    _sink: &mut SplitSink<DuplexStream, Message>,   // TODO use for sending error responses
 ) {
-    use rocket::futures::SinkExt;
-    let game_state = {
-        let session = session.lock().unwrap();
-        session.get_game_state_view(identity)
-    };
-
-    let _ = sink
-        .send(Message::Text(serde_json::to_string(&game_state).unwrap()))
-        .await;
-    match message {
+    let broadcast = match message {
         ClientResponse::StartGame => {
-            let (broadcast, game_state) = {
-                let mut session = session.lock().unwrap();
-                if session.creator_identity != identity {
-                    // TODO send an error instead of silently exiting
-                    return;
-                }
-                session.stage = GameStage::Answering;
-                session.turns.push(Turn::new());
-                (
-                    session.broadcast.clone(),
-                    session.get_game_state_view(identity),
-                )
-            };
-            // Send new game state to all clients, including this one
-            broadcast.broadcast(ServerMessage).await.unwrap();
-
-            let _ = sink
-                .send(Message::Text(serde_json::to_string(&game_state).unwrap()))
-                .await;
+            let mut session = session.lock().unwrap();
+            if session.creator_identity != identity {
+                // TODO send an error instead of silently exiting
+                return;
+            }
+            session.stage = GameStage::Answering;
+            session.turns.push(Turn::new());
+            session.broadcast.clone()
         }
-        ClientResponse::SubmitAnswer(answer) => {}
-    }
+        ClientResponse::SubmitAnswer(answer) => {
+            let mut session = session.lock().unwrap();
+            let player_index = session.player_index(&identity);
+            let turn = session.current_turn_mut();
+            if turn.answers[player_index].is_some() {
+                // TODO send an error instead of silently exiting
+                return;
+            }
+            turn.answers[player_index] = Some(answer);
+            if turn.answers.iter().all(|answer| answer.is_some()) {
+                session.stage = GameStage::Voting;
+            }
+            session.broadcast.clone()
+        }
+    };
+    // Send new game state to all clients, including this one
+    broadcast.broadcast(ServerMessage).await.unwrap();
 }
 
 #[rocket::launch]
