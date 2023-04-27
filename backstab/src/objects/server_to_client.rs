@@ -7,6 +7,8 @@ pub struct ClientGameStateView {
     pub number_of_players: u8,
     pub current_turn: u8,
     pub game_state: ClientGameState,
+    pub me: u8,
+    pub room_code: u128,
 }
 
 #[derive(TS)]
