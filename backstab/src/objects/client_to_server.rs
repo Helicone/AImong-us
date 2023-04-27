@@ -8,4 +8,5 @@ use ts_rs::TS;
 pub enum ClientResponse {
     StartGame,
     SubmitAnswer(String),
+    SubmitVote(u8),
 }

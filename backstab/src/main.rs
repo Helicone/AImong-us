@@ -353,6 +353,17 @@ async fn handle_client_message(
             }
             session.broadcast.clone()
         }
+        ClientResponse::SubmitVote(vote) => {
+            let mut session = session.lock().unwrap();
+            if vote as usize >= session.players.len() {
+                // TODO send an error instead of silently exiting
+                return;
+            }
+            let player_index = session.player_index(&identity);
+            let turn = session.current_turn_mut();
+            turn.votes[player_index] = Some(vote);
+            session.broadcast.clone()
+        }
     };
     // Send new game state to all clients, including this one
     broadcast.broadcast(ServerMessage).await.unwrap();
