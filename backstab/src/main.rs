@@ -17,12 +17,64 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
 
-struct SessionsMap(RwLock<HashMap<SessionUuid, Arc<Mutex<Session>>>>);
+struct SessionsMap(RwLock<HashMap<RoomCode, Arc<Mutex<Session>>>>);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ClientIdentity(pub u128);
 
-type SessionUuid = u128;
+#[derive(Eq, Hash, PartialEq, Clone)]
+struct RoomCode([u8; 4]);
+
+impl std::fmt::Display for RoomCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for c in self.0.iter() {
+            write!(f, "{}", char::from(*c))?;
+        }
+        Ok(())
+    }
+}
+
+impl RoomCode {
+    pub fn new() -> Self {
+        use rand::Rng;
+        const MAX_ROOM_CODE: usize = 26usize.pow(5) - 1;
+        let num = rand::thread_rng().gen_range(0..MAX_ROOM_CODE);
+        let mut code_chars = [0u8; 4];
+        for i in 0..4 {
+            code_chars[i] = (num % 26usize.pow(i as u32 + 1) / 26usize.pow(i as u32)) as u8 + 65;
+        }
+        Self(code_chars)
+    }
+
+    pub fn from_str(s: &str) -> Result<Self, ()> {
+        if s.len() != 4 || !s.chars().all(|c| c >= 'A' && c <= 'Z') {
+            return Err(());
+        }
+        let mut room_code = [0u8; 4];
+        room_code.copy_from_slice(s.to_ascii_uppercase().as_bytes());
+        let this = RoomCode(room_code);
+        assert!(this.is_valid());
+        Ok(this)
+    }
+
+    fn is_valid(&self) -> bool {
+        self.0.iter().all(|b| *b >= b'A' && *b <= b'Z')
+    }
+}
+
+#[rocket::async_trait]
+impl<'v> rocket::form::FromFormField<'v> for RoomCode {
+    fn from_value(field: rocket::form::ValueField<'v>) -> rocket::form::Result<'v, Self> {
+        match RoomCode::from_str(field.value) {
+            Ok(this) => Ok(this),
+            Err(_) => Err(rocket::form::Error::validation("couldn't parse room ID"))?,
+        }
+    }
+
+    fn default() -> Option<Self> {
+        None
+    }
+}
 
 struct Turn {
     question: String,
@@ -51,7 +103,7 @@ enum GameStage {
 }
 
 struct Session {
-    room_code: u128,
+    room_code: RoomCode,
     creator_identity: ClientIdentity,
     players: Vec<ClientIdentity>,
     broadcast: async_broadcast::Sender<ServerMessage>,
@@ -62,12 +114,12 @@ struct Session {
 impl Session {
     fn new_with_creator(
         creator_identity: ClientIdentity,
-        room_code: u128,
+        room_code: &RoomCode,
     ) -> (Self, async_broadcast::Receiver<ServerMessage>) {
         let (sender, receiver) = async_broadcast::broadcast(1);
         (
             Self {
-                room_code,
+                room_code: room_code.clone(),
                 creator_identity,
                 players: vec![creator_identity],
                 broadcast: sender,
@@ -172,7 +224,7 @@ impl Session {
 impl<'v> rocket::form::FromFormField<'v> for ClientIdentity {
     fn from_value(field: rocket::form::ValueField<'v>) -> rocket::form::Result<'v, Self> {
         match u128::from_str(field.value) {
-            Ok(identity) => Ok(ClientIdentity(identity)),
+            Ok(identity) => Ok(Self(identity)),
             Err(_) => Err(rocket::form::Error::validation(
                 "could not parse client identity",
             ))?,
@@ -195,14 +247,14 @@ fn create_room(
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
 ) -> ws::Channel<'static> {
-    let random_code: u128 = rand::random();
-    let (session, receiver) = Session::new_with_creator(identity, random_code);
+    let room_code = RoomCode::new();
+    let (session, receiver) = Session::new_with_creator(identity, &room_code);
     let session = Arc::new(Mutex::new(session));
     sessions
         .0
         .write()
         .unwrap()
-        .insert(random_code, Arc::clone(&session));
+        .insert(room_code, Arc::clone(&session));
 
     manage_game_socket(ws, identity, session, receiver)
 }
@@ -212,16 +264,13 @@ fn create_room(
 #[get("/join-room?<identity>&<room>")]
 fn join_room(
     identity: ClientIdentity,
-    room: String,
+    room: RoomCode,
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
 ) -> Result<ws::Channel<'static>, BadRequest<String>> {
-    let random_code = match u128::from_str(&room) {
-        Ok(code) => code,
-        Err(_) => return Err(BadRequest("couldn't parse room ID".to_string())),
-    };
+    let room_code = room;
     let sessions = sessions.0.read().unwrap();
-    if let Some(session) = sessions.get(&random_code) {
+    if let Some(session) = sessions.get(&room_code) {
         let receiver;
         {
             let mut session = session.lock().unwrap();
@@ -393,4 +442,17 @@ fn rocket() -> _ {
     rocket::build()
         .manage(sessions)
         .mount("/", routes![create_room, join_room])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_room_code_validity() {
+        for _ in 0..5000 {
+            let i = RoomCode::new();
+            assert!(i.is_valid());
+        }
+    }
 }
