@@ -1,18 +1,38 @@
+import { ClientGameStateView } from "../backstab/bindings/ClientGameStateView";
 import { Col } from "./layout/col";
 
 interface MainWrapperProps {
   children: React.ReactNode;
   title: string;
+  game: ClientGameStateView;
 }
 
 export function MainWrapper(props: MainWrapperProps) {
-  const { children, title } = props;
+  const { children, title, game } = props;
   return (
     <main className="flex flex-col w-full flex-1 min-h-screen justify-between bg-violet-50">
-      <h1 className="text-center w-full py-2 border-b px-5 font-mono">
+      <h1 className="text-center w-full py-2 border-b px-5 ">
         <div className="">
           <div className="flex md:flex-row w-full justify-between items-center">
-            <div className="text-center w-full">{title}</div>
+            <div className="text-center w-full"></div>
+            <div className="text-center w-full text-5xl font-mono">
+              AImong.us
+            </div>
+            <div className=" w-full text-right">
+              <button
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    "http://localhost:3000/game?room_id=" + game.room_code
+                  );
+                }}
+              >
+                <div className="flex flex-col">
+                  <div className="text-sm">Room Code</div>
+                  <div className="text-2xl">{game.room_code}</div>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </h1>

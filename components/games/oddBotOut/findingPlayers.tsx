@@ -39,7 +39,7 @@ export default function FindingPlayers(props: GameStateProps<"Lobby">) {
         />
       </Row>
       <div className="text-xl"></div>
-      {game.game_state.content.is_host && (
+      {game.game_state.content.is_host ? (
         <div className="text-xl">
           <button
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
@@ -50,13 +50,13 @@ export default function FindingPlayers(props: GameStateProps<"Lobby">) {
             Start game
           </button>
         </div>
+      ) : (
+        <div className="text-xl">Waiting for host to start game</div>
       )}
 
       <div className="text-sm right-0 bottom-0">
         {game.number_of_players} / {NUM_PLAYERS}
       </div>
-      <div>INVITE PLAYER</div>
-      <div>http://localhost:3000/game?room_id={game.room_code}</div>
     </Col>
   );
 }

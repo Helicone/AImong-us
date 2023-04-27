@@ -18,6 +18,7 @@ function Answer(props: AnswerProps) {
           props.isMe ? "bg-gray-200" : "bg-white"
         } p-5 rounded-xl shadow-md`}
         onClick={props.onClick}
+        disabled={props.isMe}
       >
         <div className="flex flex-row justify-between w-full items-center">
           <div className="flex flex-col items-start">
@@ -30,7 +31,7 @@ function Answer(props: AnswerProps) {
           <div className="text-xl">{avatar.emoji}</div>
         </div>
       </button>
-      <div className="absolute top-0 ">
+      <div className="absolute top-0 flex flex-row gap-2">
         {props.answer.votes
           .map((vote, i) => ({
             player: i,
