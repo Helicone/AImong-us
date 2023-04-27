@@ -51,6 +51,7 @@ enum GameStage {
 }
 
 struct Session {
+    room_code: u128,
     creator_identity: ClientIdentity,
     players: Vec<ClientIdentity>,
     broadcast: async_broadcast::Sender<ServerMessage>,
@@ -61,10 +62,12 @@ struct Session {
 impl Session {
     fn new_with_creator(
         creator_identity: ClientIdentity,
+        room_code: u128,
     ) -> (Self, async_broadcast::Receiver<ServerMessage>) {
         let (sender, receiver) = async_broadcast::broadcast(1);
         (
             Self {
+                room_code,
                 creator_identity,
                 players: vec![creator_identity],
                 broadcast: sender,
@@ -186,8 +189,8 @@ fn create_room(
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
 ) -> ws::Channel<'static> {
-    let random_code: u128 = 123456789; // TODO actually generate this randomly
-    let (session, receiver) = Session::new_with_creator(identity);
+    let random_code: u128 = rand::random();
+    let (session, receiver) = Session::new_with_creator(identity, random_code);
     let session = Arc::new(Mutex::new(session));
     sessions
         .0
