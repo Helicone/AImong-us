@@ -111,7 +111,24 @@ impl Session {
                     current_turn: self.turns.len() as u8,
                 }
             }
-            GameStage::Voting => todo!(),
+            GameStage::Voting => {
+                let turn = self.current_turn();
+                ClientGameStateView {
+                    game_state: ClientGameState::Voting {
+                        answers: turn
+                            .answers
+                            .iter()
+                            .enumerate()
+                            .map(|(i, a)| objects::server_to_client::Answer {
+                                answer: a.clone().unwrap_or("".to_string()),
+                                player_id: i as u8,
+                            })
+                            .collect(),
+                    },
+                    number_of_players: self.players.len() as u8,
+                    current_turn: self.turns.len() as u8,
+                }
+            }
             GameStage::Reviewing => todo!(),
             GameStage::GameOver => todo!(),
         }
