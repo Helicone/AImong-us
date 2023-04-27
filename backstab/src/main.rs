@@ -397,6 +397,10 @@ async fn handle_client_message(
     let broadcast = match message {
         ClientResponse::StartGame => {
             let mut session = session.lock().unwrap();
+            if !matches!(session.stage, GameStage::NotStarted) {
+                // TODO send an error instead of silently exiting
+                return;
+            }
             if session.creator_identity != identity {
                 // TODO send an error instead of silently exiting
                 return;
@@ -408,6 +412,10 @@ async fn handle_client_message(
         }
         ClientResponse::SubmitAnswer(answer) => {
             let mut session = session.lock().unwrap();
+            if !matches!(session.stage, GameStage::Answering) {
+                // TODO send an error instead of silently exiting
+                return;
+            }
             let player_index = session.player_index(&identity);
             let turn = session.current_turn_mut();
             if turn.answers[player_index].is_some() {
@@ -422,6 +430,10 @@ async fn handle_client_message(
         }
         ClientResponse::SubmitVote(vote) => {
             let mut session = session.lock().unwrap();
+            if !matches!(session.stage, GameStage::Voting) {
+                // TODO send an error instead of silently exiting
+                return;
+            }
             if vote as usize >= session.players.len() {
                 // TODO send an error instead of silently exiting
                 return;
