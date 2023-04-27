@@ -14,15 +14,23 @@ pub struct ClientGameStateView {
 #[derive(serde::Serialize, Clone)]
 #[serde(tag = "state", content = "content")]
 pub enum ClientGameState {
-    Lobby { is_host: bool },
-    Answering { question: String, started_at: u64, you_voted: bool },
-    Voting { answers: Vec<Answer> },
+    Lobby {
+        is_host: bool,
+    },
+    Answering {
+        question: String,
+        started_at: u64,
+        you_voted: bool,
+    },
+    Voting {
+        answers: Vec<Answer>,
+    },
 }
 
 #[derive(TS)]
 #[ts(export)]
 #[derive(serde::Serialize, Clone)]
 pub struct Answer {
-    answer: String,
-    player_id: u8,
+    pub answer: String,
+    pub player_id: u8,
 }
