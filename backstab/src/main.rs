@@ -32,12 +32,12 @@ struct Turn {
 }
 
 impl Turn {
-    fn new() -> Self {
+    fn new(num_players: usize) -> Self {
         Self {
             question: "How many TODOs could a TODO do if a TODO could do TODOs?".to_string(),
             started_at: std::time::SystemTime::now(),
-            answers: vec![],
-            votes: vec![],
+            answers: vec![None; num_players],
+            votes: vec![None; num_players],
         }
     }
 }
@@ -316,8 +316,9 @@ async fn handle_client_message(
                 // TODO send an error instead of silently exiting
                 return;
             }
+            let num_players = session.players.len();
             session.stage = GameStage::Answering;
-            session.turns.push(Turn::new());
+            session.turns.push(Turn::new(num_players));
             session.broadcast.clone()
         }
         ClientResponse::SubmitAnswer(answer) => {
