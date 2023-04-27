@@ -5,12 +5,9 @@ import {
   NUM_QUESTIONS_PER_GAME,
   TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
 } from "../../../lib/constants";
-import { GameStates } from "../../../lib/states";
 import { GameResponse } from "../../../pages/api/odd-bot-out/game";
+import { GameStateProps } from "../../../pages/game";
 
-interface QuestionAnsweringProps {
-  game: MyClientGameStateView<"InGame">;
-}
 function Timer(props: { totalTime: number; timeStarted: number }) {
   const { totalTime, timeStarted } = props;
   const [timeLeft, setTimeLeft] = useState(totalTime);
@@ -32,54 +29,34 @@ function Timer(props: { totalTime: number; timeStarted: number }) {
   );
 }
 
-export default function QuestionAnswering(props: QuestionAnsweringProps) {
-  const { game } = props;
+export default function QuestionAnswering(props: GameStateProps<"Answering">) {
+  const { game, sendMessage } = props;
+
   const [answer, setAnswer] = useState<string>("");
 
-  const currentQuestion = game.questions[game.questions.length - 1];
-  console.log(game);
+  const currentQuestion = game.game_state.content.question;
+  console.log("game", game);
   if (!currentQuestion) {
     return <div>Game not found</div>;
   }
-
-  const timeLeft =
-    TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000 -
-    (Date.now() - new Date(currentQuestion.created_at!).getTime());
-  console.log(timeLeft);
-
-  const colorMap: { [key in GameStates]: string } = {
-    finding_players: "bg-yellow-600",
-    needs_question: "bg-yellow-600",
-    questions: "bg-green-600",
-    voting: "bg-green-600",
-    voting_results: "bg-green-600",
-    should_continue: "bg-green-600",
-    game_over: "bg-red-600",
-  };
 
   return (
     <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
       <div>
         {" "}
-        Question {game.questions.length}/{NUM_QUESTIONS_PER_GAME}
+        Question {game.current_turn}/{NUM_QUESTIONS_PER_GAME}
       </div>
       <div className="flex flex-row justify-between col-span-2">
         <div className="flex flex-row">
-          <div
-            className={
-              "align-start p-2 text-white font-bold rounded-lg " +
-              colorMap[game.game_state as GameStates]
-            }
-          >
-            {game.game_state}
-          </div>
           <p className="p-2">
-            {game.player_count} / {NUM_PLAYERS} Players Joined
+            {game.number_of_players} / {NUM_PLAYERS} Players Joined
           </p>
         </div>
         <Timer
           totalTime={TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000}
-          timeStarted={new Date(currentQuestion.created_at!).getTime()}
+          timeStarted={new Date(
+            Number(game.game_state.content.started_at)
+          ).getTime()}
         />
       </div>
       <div className="flex flex-col col-span-2">
@@ -88,7 +65,7 @@ export default function QuestionAnswering(props: QuestionAnsweringProps) {
             htmlFor="answer"
             className="block text-sm font-medium leading-6 text-gray-900"
           >
-            {currentQuestion.question}
+            {currentQuestion}
           </label>
           <div className="mt-2">
             <textarea
@@ -109,17 +86,8 @@ export default function QuestionAnswering(props: QuestionAnsweringProps) {
         <button
           className="bg-gray-600 text-white p-2 w-full hover:opacity-90"
           onClick={() => {
-            fetch(
-              "/api/odd-bot-out/questions/" + currentQuestion.id + "/answer",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ answer }),
-              }
-            ).then((res) => {
-              console.log("SET ANSWER", res);
+            sendMessage({
+              SubmitAnswer: answer,
             });
           }}
         >

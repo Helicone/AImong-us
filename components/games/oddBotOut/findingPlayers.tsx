@@ -44,18 +44,19 @@ export default function FindingPlayers(props: GameStateProps<"Lobby">) {
           <button
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
             onClick={() => {
-              sendMessage({
-                Lobby: "StartGame",
-              });
+              sendMessage("StartGame");
             }}
           >
             Start game
           </button>
         </div>
       )}
+
       <div className="text-sm right-0 bottom-0">
         {game.number_of_players} / {NUM_PLAYERS}
       </div>
+      <div>INVITE PLAYER</div>
+      <div>http://localhost:3000/game?room_id={game.room_code}</div>
     </Col>
   );
 }

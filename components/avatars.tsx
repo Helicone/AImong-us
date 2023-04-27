@@ -1,3 +1,5 @@
+import { shuffle } from "../lib/shuffle";
+
 export const AVATARS = [
   { emoji: "🐲", name: "Dragon", color: "bg-red-400" },
   { emoji: "🐻", name: "Bear", color: "bg-orange-400" },
@@ -16,3 +18,12 @@ export const AVATARS = [
   { emoji: "🐯", name: "Tiger", color: "bg-pink-400" },
   { emoji: "🦁", name: "Lion", color: "bg-rose-400" },
 ];
+
+export function getAvatar(playerIdx: number, seed: string) {
+  const seedNumber = seed
+    .split("")
+    .map((char) => char.charCodeAt(0))
+    .reduce((a, b) => a + b, 0);
+
+  return shuffle(AVATARS, seedNumber)[playerIdx];
+}

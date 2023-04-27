@@ -1,81 +1,94 @@
-import clsx from "clsx";
 import { useState } from "react";
-import {
-  NUM_PLAYERS,
-  PLAYER_NAMES,
-  TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
-} from "../../../lib/constants";
-import { GameResponse } from "../../../pages/api/odd-bot-out/game";
+import { GameStateProps } from "../../../pages/game";
+import { getAvatar } from "../../avatars";
 
-interface VotingProps {
-  game: NonNullable<GameResponse>;
+interface AnswerProps {
+  answer: GameStateProps<"Voting">["game"]["game_state"]["content"]["answers"][number];
+  isMe: boolean;
+  onClick: () => void;
+  room_code: string;
+}
+function Answer(props: AnswerProps) {
+  const avatar = getAvatar(props.answer.player_id, props.room_code);
+
+  return (
+    <div className="relative">
+      <button
+        className={`flex flex-col items-center justify-center w-full ${
+          props.isMe ? "bg-gray-200" : "bg-white"
+        } p-5 rounded-xl shadow-md`}
+        onClick={props.onClick}
+      >
+        <div className="flex flex-row justify-between w-full items-center">
+          <div className="flex flex-col items-start">
+            <div className="text-2xl">{props.answer.answer}</div>
+            <div className="text-sm">
+              {avatar.name}
+              {props.isMe ? " (You)" : ""}
+            </div>
+          </div>
+          <div className="text-xl">{avatar.emoji}</div>
+        </div>
+      </button>
+      <div className="absolute top-0 ">
+        {props.answer.votes
+          .map((vote, i) => ({
+            player: i,
+            vote: vote,
+          }))
+          .filter((vote) => vote !== null)
+          .filter((vote) => vote.vote === props.answer.player_id)
+          .map((vote, i) => (
+            <div
+              className={`flex flex-row items-center justify-center w-full bg-green-200 p-1 rounded-xl shadow-md`}
+              key={i}
+            >
+              <div className="text-lg">
+                {getAvatar(vote.player, props.room_code).emoji}
+              </div>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
 }
 
-export default function Voting(props: VotingProps) {
-  const { game } = props;
-  const [answer, setAnswer] = useState<string>("");
+export default function Voting(props: GameStateProps<"Voting">) {
+  const { game, sendMessage } = props;
 
-  const currentQuestion = game.questions[game.questions.length - 1];
+  const currentQuestion = "TODO GET QUESTION FROM BACKEND";
   if (!currentQuestion) {
     return <div>Game not found</div>;
   }
   console.log(game);
-
-  const playersThatDidNotAnswer = game.players.filter(
-    (player) =>
-      !currentQuestion.answers.find(
-        (answer) => answer.random_player_number === player.randomPlayerNumber
-      )
+  const answersToVoteOn = game.game_state.content.answers.filter(
+    (answer) => answer.player_id !== game.me
   );
 
   return (
     <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
-      <div>Voting</div>
       <div className="flex flex-col col-span-2 gap-5">
-        <div>{currentQuestion.question}</div>
-        <div>
-          {playersThatDidNotAnswer.map((player) => (
-            <div key={player.randomPlayerNumber}>
-              {PLAYER_NAMES[player.index]} did not answer
-            </div>
+        <div>{currentQuestion}</div>
+        <div>{getAvatar(game.me, game.room_code).emoji}</div>
+        <div className="flex flex-col max-w-md gap-5">
+          {game.game_state.content.answers.map((answer, i) => (
+            <Answer
+              answer={answer}
+              isMe={answer.player_id === game.me}
+              onClick={() => {
+                if (answer.player_id !== game.me) {
+                  sendMessage({
+                    SubmitVote: answer.player_id,
+                  });
+                } else {
+                  console.log("You can't vote for yourself!");
+                }
+              }}
+              room_code={game.room_code}
+              key={i}
+            />
           ))}
         </div>
-
-        {currentQuestion.answers.map((answer, i) => (
-          <div className="" key={i}>
-            <div className="flex flex-row gap-2">
-              <div>
-                {
-                  PLAYER_NAMES[
-                    game.players.findIndex(
-                      (player) =>
-                        player.randomPlayerNumber ===
-                        answer.random_player_number
-                    )
-                  ]
-                }
-              </div>
-              <div>{":"}</div>
-              <div>{answer.answer}</div>
-            </div>
-            <div>
-              <button
-                className={clsx(
-                  "border-2 border-gray-800 bg-gray-600 text-white p-2  hover:opacity-90",
-                  answer.random_player_number === game.me && "bg-red-300"
-                )}
-                onClick={() => {
-                  fetch(`/api/odd-bot-out/answer/${answer.id}/vote`);
-                }}
-                disabled={answer.random_player_number === game.me}
-              >
-                {answer.random_player_number === game.me
-                  ? "this is you"
-                  : "Vote"}
-              </button>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

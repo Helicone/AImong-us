@@ -8,7 +8,7 @@ import { MainWrapper } from "../components/mainWrapper";
 import React, { useState, useEffect } from "react";
 import Lobby from "../components/games/oddBotOut/lobby";
 import { useRouter } from "next/router";
-import { GameStates } from "../lib/states";
+
 import FindingPlayers from "../components/games/oddBotOut/findingPlayers";
 import QuestionAnswering from "../components/games/oddBotOut/questionAnswering";
 import Voting from "../components/games/oddBotOut/voting";
@@ -40,10 +40,14 @@ function GameIsolateChannel({
       ) => JSX.Element;
     } = {
       Lobby: (props) => <FindingPlayers {...props} />,
-      InGame: (props) => <QuestionAnswering {...props} />,
+      Answering: (props) => <QuestionAnswering {...props} />,
+      Voting: (props) => <Voting {...props} />,
     };
 
     const GameState = stateMap[gameState.game_state.state];
+    if (!GameState) {
+      return <div>Unknown game state: {gameState.game_state.state}</div>;
+    }
 
     return (
       <div>
