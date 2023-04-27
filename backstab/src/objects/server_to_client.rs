@@ -8,7 +8,7 @@ pub struct ClientGameStateView {
     pub current_turn: u8,
     pub game_state: ClientGameState,
     pub me: u8,
-    pub room_code: u128,
+    pub room_code: String,
 }
 
 #[derive(TS)]

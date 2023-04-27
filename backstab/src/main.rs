@@ -99,7 +99,7 @@ impl Session {
                 },
                 current_turn: self.turns.len() as u8,
                 me: self.player_index(&identity) as u8,
-                room_code: self.room_code,
+                room_code: self.room_code.to_string(),
             },
             GameStage::Answering => {
                 let turn = self.current_turn();
@@ -116,7 +116,7 @@ impl Session {
                     number_of_players: self.players.len() as u8,
                     current_turn: self.turns.len() as u8,
                     me: self.player_index(&identity) as u8,
-                    room_code: self.room_code,
+                    room_code: self.room_code.to_string(),
                 }
             }
             GameStage::Voting => {
@@ -142,7 +142,7 @@ impl Session {
                     number_of_players: self.players.len() as u8,
                     current_turn: self.turns.len() as u8,
                     me: self.player_index(&identity) as u8,
-                    room_code: self.room_code,
+                    room_code: self.room_code.to_string(),
                 }
             }
             GameStage::Reviewing => todo!(),
