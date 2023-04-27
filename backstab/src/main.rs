@@ -106,6 +106,7 @@ impl Session {
                             .duration_since(std::time::UNIX_EPOCH)
                             .unwrap()
                             .as_millis() as u64,
+                        you_voted: turn.answers[self.player_index(&identity)].is_some(),
                     },
                     number_of_players: self.players.len() as u8,
                     current_turn: self.turns.len() as u8,

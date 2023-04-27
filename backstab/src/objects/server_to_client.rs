@@ -15,7 +15,7 @@ pub struct ClientGameStateView {
 #[serde(tag = "state", content = "content")]
 pub enum ClientGameState {
     Lobby { is_host: bool },
-    Answering { question: String, started_at: u64 },
+    Answering { question: String, started_at: u64, you_voted: bool },
     Voting { answers: Vec<Answer> },
 }
 
