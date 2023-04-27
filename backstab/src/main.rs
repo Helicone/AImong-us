@@ -123,6 +123,12 @@ impl Session {
                             .map(|(i, a)| objects::server_to_client::Answer {
                                 answer: a.clone().unwrap_or("".to_string()),
                                 player_id: i as u8,
+                                votes: turn
+                                    .votes
+                                    .iter()
+                                    .filter_map(|v| *v)
+                                    .filter(|v| *v as usize == i)
+                                    .count() as u8,
                             })
                             .collect(),
                     },
@@ -146,7 +152,10 @@ impl Session {
     }
 
     fn player_index(&self, identity: &ClientIdentity) -> usize {
-        self.players.iter().position(|p| p == identity).expect("client identity missing from players")
+        self.players
+            .iter()
+            .position(|p| p == identity)
+            .expect("client identity missing from players")
     }
 }
 
@@ -325,7 +334,7 @@ async fn handle_client_message(
     identity: ClientIdentity,
     message: ClientResponse,
     session: Arc<Mutex<Session>>,
-    _sink: &mut SplitSink<DuplexStream, Message>,   // TODO use for sending error responses
+    _sink: &mut SplitSink<DuplexStream, Message>, // TODO use for sending error responses
 ) {
     let broadcast = match message {
         ClientResponse::StartGame => {

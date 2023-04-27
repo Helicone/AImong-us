@@ -33,4 +33,5 @@ pub enum ClientGameState {
 pub struct Answer {
     pub answer: String,
     pub player_id: u8,
+    pub votes: u8,
 }
