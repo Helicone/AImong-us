@@ -16,4 +16,13 @@ pub struct ClientGameStateView {
 pub enum ClientGameState {
     Lobby { is_host: bool },
     Answering { question: String, started_at: u64 },
+    Voting { answers: Vec<Answer> },
+}
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(serde::Serialize, Clone)]
+pub struct Answer {
+    answer: String,
+    player_id: u8,
 }
