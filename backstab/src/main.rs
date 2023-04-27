@@ -79,6 +79,8 @@ impl<'v> rocket::form::FromFormField<'v> for RoomCode {
 struct Turn {
     question: String,
     started_at: std::time::SystemTime,
+    voting_started_at: Option<std::time::SystemTime>,
+    reviewing_started_at: Option<std::time::SystemTime>,
     answers: Vec<Option<String>>,
     votes: Vec<Option<u8>>,
 }
@@ -88,6 +90,8 @@ impl Turn {
         Self {
             question: "How many TODOs could a TODO do if a TODO could do TODOs?".to_string(),
             started_at: std::time::SystemTime::now(),
+            voting_started_at: None,
+            reviewing_started_at: None,
             answers: vec![None; num_players],
             votes: vec![None; num_players],
         }
@@ -175,6 +179,13 @@ impl Session {
                 let turn = self.current_turn();
                 ClientGameStateView {
                     game_state: ClientGameState::Voting {
+                        votes: turn.votes.clone(),
+                        started_at: turn
+                            .voting_started_at
+                            .unwrap()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap()
+                            .as_millis() as u64,
                         answers: turn
                             .answers
                             .iter()
@@ -182,7 +193,6 @@ impl Session {
                             .map(|(i, a)| objects::server_to_client::Answer {
                                 answer: a.clone().unwrap_or("".to_string()),
                                 player_id: i as u8,
-                                votes: turn.votes.clone(),
                             })
                             .collect(),
                     },
@@ -196,6 +206,13 @@ impl Session {
                 let turn = self.current_turn();
                 ClientGameStateView {
                     game_state: ClientGameState::Reviewing {
+                        started_at: turn
+                            .reviewing_started_at
+                            .unwrap()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap()
+                            .as_millis() as u64,
+                        votes: turn.votes.clone(),
                         answers: turn
                             .answers
                             .iter()
@@ -203,7 +220,6 @@ impl Session {
                             .map(|(i, a)| objects::server_to_client::Answer {
                                 answer: a.clone().unwrap_or("".to_string()),
                                 player_id: i as u8,
-                                votes: turn.votes.clone(),
                             })
                             .collect(),
                         eliminated: Some((0, true)),
@@ -415,6 +431,7 @@ async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
             return;
         }
         locked_session.stage = GameStage::Voting;
+        locked_session.current_turn_mut().voting_started_at = Some(std::time::SystemTime::now());
         let async_session = Arc::clone(&session);
         let turn_number = locked_session.turns.len() - 1;
         tokio::task::spawn(async move {
@@ -439,6 +456,7 @@ async fn end_voting(session: Arc<Mutex<Session>>, turn: usize) {
             return;
         }
         session.stage = GameStage::Reviewing;
+        session.current_turn_mut().reviewing_started_at = Some(std::time::SystemTime::now());
         session.broadcast.clone()
     };
 
@@ -492,6 +510,8 @@ async fn handle_client_message(
             turn.answers[player_index] = Some(answer);
             if turn.answers.iter().all(|answer| answer.is_some()) {
                 locked_session.stage = GameStage::Voting;
+                locked_session.current_turn_mut().voting_started_at =
+                    Some(std::time::SystemTime::now());
                 let async_session = Arc::clone(&session);
                 let turn_number = locked_session.turns.len() - 1;
                 tokio::task::spawn(async move {
