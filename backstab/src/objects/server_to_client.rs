@@ -27,6 +27,11 @@ pub enum ClientGameState {
     Voting {
         answers: Vec<Answer>,
     },
+    Reviewing {
+        answers: Vec<Answer>,
+        // true if a bot was eliminated
+        eliminated: Option<(u8, bool)>,
+    },
 }
 
 #[derive(TS)]

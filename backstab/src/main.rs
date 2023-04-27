@@ -192,7 +192,28 @@ impl Session {
                     room_code: self.room_code.to_string(),
                 }
             }
-            GameStage::Reviewing => todo!(),
+            GameStage::Reviewing => {
+                let turn = self.current_turn();
+                ClientGameStateView {
+                    game_state: ClientGameState::Reviewing {
+                        answers: turn
+                            .answers
+                            .iter()
+                            .enumerate()
+                            .map(|(i, a)| objects::server_to_client::Answer {
+                                answer: a.clone().unwrap_or("".to_string()),
+                                player_id: i as u8,
+                                votes: turn.votes.clone(),
+                            })
+                            .collect(),
+                        eliminated: Some((0, true)),
+                    },
+                    number_of_players: self.players.len() as u8,
+                    current_turn: self.turns.len() as u8,
+                    me: self.player_index(&identity) as u8,
+                    room_code: self.room_code.to_string(),
+                }
+            }
             GameStage::GameOver => todo!(),
         }
     }
@@ -385,15 +406,39 @@ async fn handle_server_message(
 
 async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
     let broadcast = {
+        let mut locked_session = session.lock().unwrap();
+        if !matches!(locked_session.stage, GameStage::Answering) {
+            return;
+        }
+        if locked_session.turns.len() - 1 > turn {
+            // that turn already finished
+            return;
+        }
+        locked_session.stage = GameStage::Voting;
+        let async_session = Arc::clone(&session);
+        let turn_number = locked_session.turns.len() - 1;
+        tokio::task::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(VOTING_TIMEOUT_SECS)).await;
+            end_voting(async_session, turn_number).await;
+        });
+        locked_session.broadcast.clone()
+    };
+
+    // Send new game state to all clients
+    broadcast.broadcast(ServerMessage).await.unwrap();
+}
+
+async fn end_voting(session: Arc<Mutex<Session>>, turn: usize) {
+    let broadcast = {
         let mut session = session.lock().unwrap();
-        if !matches!(session.stage, GameStage::Answering) {
+        if !matches!(session.stage, GameStage::Voting) {
             return;
         }
         if session.turns.len() - 1 > turn {
             // that turn already finished
             return;
         }
-        session.stage = GameStage::Voting;
+        session.stage = GameStage::Reviewing;
         session.broadcast.clone()
     };
 
@@ -402,6 +447,7 @@ async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
 }
 
 const ANSWERING_TIMEOUT_SECS: u64 = 10;
+const VOTING_TIMEOUT_SECS: u64 = 10;
 
 async fn handle_client_message(
     identity: ClientIdentity,
@@ -432,22 +478,28 @@ async fn handle_client_message(
             locked_session.broadcast.clone()
         }
         ClientResponse::SubmitAnswer(answer) => {
-            let mut session = session.lock().unwrap();
-            if !matches!(session.stage, GameStage::Answering) {
+            let mut locked_session = session.lock().unwrap();
+            if !matches!(locked_session.stage, GameStage::Answering) {
                 // TODO send an error instead of silently exiting
                 return;
             }
-            let player_index = session.player_index(&identity);
-            let turn = session.current_turn_mut();
+            let player_index = locked_session.player_index(&identity);
+            let turn = locked_session.current_turn_mut();
             if turn.answers[player_index].is_some() {
                 // TODO send an error instead of silently exiting
                 return;
             }
             turn.answers[player_index] = Some(answer);
             if turn.answers.iter().all(|answer| answer.is_some()) {
-                session.stage = GameStage::Voting;
+                locked_session.stage = GameStage::Voting;
+                let async_session = Arc::clone(&session);
+                let turn_number = locked_session.turns.len() - 1;
+                tokio::task::spawn(async move {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(VOTING_TIMEOUT_SECS)).await;
+                    end_voting(async_session, turn_number).await;
+                });
             }
-            session.broadcast.clone()
+            locked_session.broadcast.clone()
         }
         ClientResponse::SubmitVote(vote) => {
             let mut session = session.lock().unwrap();
