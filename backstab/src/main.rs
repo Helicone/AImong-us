@@ -383,6 +383,26 @@ async fn handle_server_message(
         .await;
 }
 
+async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
+    let broadcast = {
+        let mut session = session.lock().unwrap();
+        if !matches!(session.stage, GameStage::Answering) {
+            return;
+        }
+        if session.turns.len() - 1 > turn {
+            // that turn already finished
+            return;
+        }
+        session.stage = GameStage::Voting;
+        session.broadcast.clone()
+    };
+
+    // Send new game state to all clients
+    broadcast.broadcast(ServerMessage).await.unwrap();
+}
+
+const ANSWERING_TIMEOUT_SECS: u64 = 10;
+
 async fn handle_client_message(
     identity: ClientIdentity,
     message: ClientResponse,
@@ -391,19 +411,25 @@ async fn handle_client_message(
 ) {
     let broadcast = match message {
         ClientResponse::StartGame => {
-            let mut session = session.lock().unwrap();
-            if !matches!(session.stage, GameStage::NotStarted) {
+            let mut locked_session = session.lock().unwrap();
+            if !matches!(locked_session.stage, GameStage::NotStarted) {
                 // TODO send an error instead of silently exiting
                 return;
             }
-            if session.creator_identity != identity {
+            if locked_session.creator_identity != identity {
                 // TODO send an error instead of silently exiting
                 return;
             }
-            let num_players = session.players.len();
-            session.stage = GameStage::Answering;
-            session.turns.push(Turn::new(num_players));
-            session.broadcast.clone()
+            let num_players = locked_session.players.len();
+            locked_session.stage = GameStage::Answering;
+            locked_session.turns.push(Turn::new(num_players));
+            let async_session = Arc::clone(&session);
+            let turn_number = locked_session.turns.len() - 1;
+            tokio::task::spawn(async move {
+                tokio::time::sleep(tokio::time::Duration::from_secs(ANSWERING_TIMEOUT_SECS)).await;
+                end_answering(async_session, turn_number).await;
+            });
+            locked_session.broadcast.clone()
         }
         ClientResponse::SubmitAnswer(answer) => {
             let mut session = session.lock().unwrap();
