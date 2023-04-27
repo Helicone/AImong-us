@@ -182,12 +182,7 @@ impl Session {
                             .map(|(i, a)| objects::server_to_client::Answer {
                                 answer: a.clone().unwrap_or("".to_string()),
                                 player_id: i as u8,
-                                votes: turn
-                                    .votes
-                                    .iter()
-                                    .filter_map(|v| *v)
-                                    .filter(|v| *v as usize == i)
-                                    .count() as u8,
+                                votes: turn.votes.clone(),
                             })
                             .collect(),
                     },
