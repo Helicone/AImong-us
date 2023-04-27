@@ -204,6 +204,29 @@ impl Session {
             }
             GameStage::Reviewing => {
                 let turn = self.current_turn();
+                let answers = turn
+                    .answers
+                    .iter()
+                    .enumerate()
+                    .map(|(i, a)| objects::server_to_client::Answer {
+                        answer: a.clone().unwrap_or("".to_string()),
+                        player_id: i as u8,
+                    })
+                    .collect::<Vec<_>>();
+                let mut votecounts = vec![0; self.players.len()];
+                for v in turn.votes.iter().filter_map(|v| *v) {
+                    votecounts[v as usize] += 1;
+                }
+                let max = votecounts.iter().max();
+                let eliminated = max.and_then(|max| {
+                    let first_max_pos = votecounts.iter().position(|count| *count == *max).unwrap();
+                    let has_second_max = votecounts[first_max_pos + 1..].contains(max);
+                    if has_second_max {
+                        None
+                    } else {
+                        Some((votecounts[first_max_pos], false))
+                    }
+                });
                 ClientGameStateView {
                     game_state: ClientGameState::Reviewing {
                         started_at: turn
@@ -213,16 +236,8 @@ impl Session {
                             .unwrap()
                             .as_millis() as u64,
                         votes: turn.votes.clone(),
-                        answers: turn
-                            .answers
-                            .iter()
-                            .enumerate()
-                            .map(|(i, a)| objects::server_to_client::Answer {
-                                answer: a.clone().unwrap_or("".to_string()),
-                                player_id: i as u8,
-                            })
-                            .collect(),
-                        eliminated: Some((0, true)),
+                        answers,
+                        eliminated,
                     },
                     number_of_players: self.players.len() as u8,
                     current_turn: self.turns.len() as u8,
