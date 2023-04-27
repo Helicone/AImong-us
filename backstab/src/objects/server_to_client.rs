@@ -20,15 +20,19 @@ pub enum ClientGameState {
         is_host: bool,
     },
     Answering {
-        question: String,
         started_at: u64,
+        question: String,
         you_voted: bool,
     },
     Voting {
+        started_at: u64,
         answers: Vec<Answer>,
+        votes: Vec<Option<u8>>,
     },
     Reviewing {
+        started_at: u64,
         answers: Vec<Answer>,
+        votes: Vec<Option<u8>>,
         // true if a bot was eliminated
         eliminated: Option<(u8, bool)>,
     },
@@ -40,5 +44,4 @@ pub enum ClientGameState {
 pub struct Answer {
     pub answer: String,
     pub player_id: u8,
-    pub votes: Vec<Option<u8>>,
 }
