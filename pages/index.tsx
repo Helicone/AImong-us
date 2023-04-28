@@ -2,7 +2,7 @@
 import Head from "next/head";
 import { MainWrapper } from "../components/mainWrapper";
 
-import Lobby from "../components/games/oddBotOut/lobby";
+import Lobby from "../components/games/aimongus/lobby";
 
 export default function Home() {
   return (

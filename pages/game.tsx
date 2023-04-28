@@ -9,10 +9,10 @@ import { ClientGameState } from "../aimongus_types/bindings/ClientGameState";
 import { ClientGameStateView } from "../aimongus_types/bindings/ClientGameStateView";
 import { ClientResponse } from "../aimongus_types/bindings/ClientResponse";
 import { MyClientGameStateView } from "../aimongus_types/bindings/ExtractClientState";
-import FindingPlayers from "../components/games/oddBotOut/findingPlayers";
-import QuestionAnswering from "../components/games/oddBotOut/questionAnswering";
-import Voting from "../components/games/oddBotOut/voting";
-import VotingResults from "../components/games/oddBotOut/votingResults";
+import FindingPlayers from "../components/games/aimongus/findingPlayers";
+import QuestionAnswering from "../components/games/aimongus/questionAnswering";
+import Voting from "../components/games/aimongus/voting";
+import VotingResults from "../components/games/aimongus/votingResults";
 import useUser from "../lib/hooks/useUser";
 import { useWebsocket } from "../lib/hooks/useWebhook";
 
