@@ -14,3 +14,7 @@ npm run dev
 # or
 yarn dev
 ```
+
+## How to play
+
+Check out [this video](https://www.youtube.com/watch?v=5DlROhT8NgU).
