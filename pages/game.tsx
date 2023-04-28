@@ -42,6 +42,7 @@ function GameIsolateChannel({
       Lobby: (props) => <FindingPlayers {...props} />,
       Answering: (props) => <QuestionAnswering {...props} />,
       Voting: (props) => <Voting {...props} />,
+      Reviewing: (props) => <VotingResults {...props} />,
     };
 
     const GameState = stateMap[gameState.game_state.state];

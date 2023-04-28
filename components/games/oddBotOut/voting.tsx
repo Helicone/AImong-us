@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { GameStateProps } from "../../../pages/game";
 import { getAvatar } from "../../avatars";
+import { Timer } from "./timer";
+import { TIME_ALLOWANCE_VOTING_RESULTS_SECONDS } from "../../../lib/constants";
 
 interface AnswerProps {
   answer: GameStateProps<"Voting">["game"]["game_state"]["content"]["answers"][number];
+  votes: GameStateProps<"Voting">["game"]["game_state"]["content"]["votes"];
   isMe: boolean;
   onClick: () => void;
   room_code: string;
@@ -32,7 +35,7 @@ function Answer(props: AnswerProps) {
         </div>
       </button>
       <div className="absolute top-0 flex flex-row gap-2">
-        {props.answer.votes
+        {props.votes
           .map((vote, i) => ({
             player: i,
             vote: vote,
@@ -57,7 +60,7 @@ function Answer(props: AnswerProps) {
 export default function Voting(props: GameStateProps<"Voting">) {
   const { game, sendMessage } = props;
 
-  const currentQuestion = "TODO GET QUESTION FROM BACKEND";
+  const currentQuestion = game.game_state.content.question;
   if (!currentQuestion) {
     return <div>Game not found</div>;
   }
@@ -67,13 +70,14 @@ export default function Voting(props: GameStateProps<"Voting">) {
   );
 
   return (
-    <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
+    <div className="flex flex-col gap-20">
       <div className="flex flex-col col-span-2 gap-5">
         <div>{currentQuestion}</div>
         <div>{getAvatar(game.me, game.room_code).emoji}</div>
         <div className="flex flex-col max-w-md gap-5">
           {game.game_state.content.answers.map((answer, i) => (
             <Answer
+              votes={game.game_state.content.votes}
               answer={answer}
               isMe={answer.player_id === game.me}
               onClick={() => {
@@ -90,6 +94,14 @@ export default function Voting(props: GameStateProps<"Voting">) {
             />
           ))}
         </div>
+      </div>
+      <div>
+        <Timer
+          totalTime={TIME_ALLOWANCE_VOTING_RESULTS_SECONDS * 1000}
+          timeStarted={new Date(
+            Number(game.game_state.content.started_at)
+          ).getTime()}
+        />
       </div>
     </div>
   );

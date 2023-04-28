@@ -7,27 +7,7 @@ import {
 } from "../../../lib/constants";
 import { GameResponse } from "../../../pages/api/odd-bot-out/game";
 import { GameStateProps } from "../../../pages/game";
-
-function Timer(props: { totalTime: number; timeStarted: number }) {
-  const { totalTime, timeStarted } = props;
-  const [timeLeft, setTimeLeft] = useState(totalTime);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeLeft(totalTime - (Date.now() - timeStarted));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [totalTime, timeStarted]);
-
-  return (
-    <div className="flex flex-row">
-      <div className="flex flex-row items-center">
-        <div className="text-2xl">{Math.floor(timeLeft / 1000)}</div>
-        <div className="text-xl">s</div>
-      </div>
-    </div>
-  );
-}
+import { Timer } from "./timer";
 
 export default function QuestionAnswering(props: GameStateProps<"Answering">) {
   const { game, sendMessage } = props;
@@ -52,12 +32,6 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
             {game.number_of_players} / {NUM_PLAYERS} Players Joined
           </p>
         </div>
-        <Timer
-          totalTime={TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000}
-          timeStarted={new Date(
-            Number(game.game_state.content.started_at)
-          ).getTime()}
-        />
       </div>
       <div className="flex flex-col col-span-2">
         <div>
@@ -93,6 +67,14 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
         >
           Submit Answer
         </button>
+      </div>
+      <div>
+        <Timer
+          totalTime={TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000}
+          timeStarted={new Date(
+            Number(game.game_state.content.started_at)
+          ).getTime()}
+        />
       </div>
     </div>
   );

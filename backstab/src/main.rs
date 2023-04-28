@@ -180,6 +180,7 @@ impl Session {
                 ClientGameStateView {
                     game_state: ClientGameState::Voting {
                         votes: turn.votes.clone(),
+                        question: turn.question.clone(),
                         started_at: turn
                             .voting_started_at
                             .unwrap()
@@ -229,6 +230,7 @@ impl Session {
                 });
                 ClientGameStateView {
                     game_state: ClientGameState::Reviewing {
+                        question: turn.question.clone(),
                         started_at: turn
                             .reviewing_started_at
                             .unwrap()

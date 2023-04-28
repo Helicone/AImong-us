@@ -26,11 +26,13 @@ pub enum ClientGameState {
     },
     Voting {
         started_at: u64,
+        question: String,
         answers: Vec<Answer>,
         votes: Vec<Option<u8>>,
     },
     Reviewing {
         started_at: u64,
+        question: String,
         answers: Vec<Answer>,
         votes: Vec<Option<u8>>,
         // true if a bot was eliminated
