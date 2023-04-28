@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MyClientGameStateView } from "../../../backstab/bindings/ExtractClientState";
+import { MyClientGameStateView } from "../../../aimongus_types/bindings/ExtractClientState";
 import {
   NUM_PLAYERS,
   NUM_QUESTIONS_PER_GAME,

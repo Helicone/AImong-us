@@ -1,25 +1,20 @@
 /* eslint-disable @next/next/no-img-element */
 
-import Head from "next/head";
-import LoggedInFlow from "../components/loggedInFlow";
-import LoggedOutFlow from "../components/loggedOutFlow";
 import { MainWrapper } from "../components/mainWrapper";
 
-import React, { useState, useEffect } from "react";
-import Lobby from "../components/games/oddBotOut/lobby";
 import { useRouter } from "next/router";
+import { useState } from "react";
 
+import { ClientGameState } from "../aimongus_types/bindings/ClientGameState";
+import { ClientGameStateView } from "../aimongus_types/bindings/ClientGameStateView";
+import { ClientResponse } from "../aimongus_types/bindings/ClientResponse";
+import { MyClientGameStateView } from "../aimongus_types/bindings/ExtractClientState";
 import FindingPlayers from "../components/games/oddBotOut/findingPlayers";
 import QuestionAnswering from "../components/games/oddBotOut/questionAnswering";
 import Voting from "../components/games/oddBotOut/voting";
 import VotingResults from "../components/games/oddBotOut/votingResults";
 import useUser from "../lib/hooks/useUser";
 import { useWebsocket } from "../lib/hooks/useWebhook";
-import { Channel, useChannel } from "../lib/hooks/usChannel";
-import { ClientGameStateView } from "../backstab/bindings/ClientGameStateView";
-import { ClientResponse } from "../backstab/bindings/ClientResponse";
-import { MyClientGameStateView } from "../backstab/bindings/ExtractClientState";
-import { ClientGameState } from "../backstab/bindings/ClientGameState";
 
 export interface GameStateProps<T extends ClientGameState["state"]> {
   game: MyClientGameStateView<T>;

@@ -1,16 +1,9 @@
-import clsx from "clsx";
+import Lottie from "react-lottie";
 import { NUM_PLAYERS } from "../../../lib/constants";
-import { GameResponse } from "../../../pages/api/odd-bot-out/game";
+import { GameStateProps } from "../../../pages/game";
+import searching from "../../../public/lottie/finding.json";
 import { Col } from "../../layout/col";
 import { Row } from "../../layout/row";
-import { Spacer } from "../../layout/spacer";
-import Lottie from "react-lottie";
-import { IoPersonCircle } from "react-icons/io5";
-import searching from "../../../public/lottie/finding.json";
-import { ClientGameState } from "../../../backstab/bindings/ClientGameState";
-import { ClientGameStateView } from "../../../backstab/bindings/ClientGameStateView";
-import { MyClientGameStateView } from "../../../backstab/bindings/ExtractClientState";
-import { GameStateProps } from "../../../pages/game";
 
 export default function FindingPlayers(props: GameStateProps<"Lobby">) {
   const { game, sendMessage } = props;

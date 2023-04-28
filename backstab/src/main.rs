@@ -2,9 +2,9 @@
 #[macro_use]
 extern crate rocket;
 
+use aimongus_types::client_to_server::ClientResponse;
+use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView};
 use futures::stream::SplitSink;
-use objects::client_to_server::ClientResponse;
-use objects::server_to_client::{ClientGameState, ClientGameStateView};
 use objects::server_to_server::ServerMessage;
 use rocket::{response::status::BadRequest, State};
 
@@ -191,7 +191,7 @@ impl Session {
                             .answers
                             .iter()
                             .enumerate()
-                            .map(|(i, a)| objects::server_to_client::Answer {
+                            .map(|(i, a)| aimongus_types::server_to_client::Answer {
                                 answer: a.clone().unwrap_or("".to_string()),
                                 player_id: i as u8,
                             })
@@ -209,7 +209,7 @@ impl Session {
                     .answers
                     .iter()
                     .enumerate()
-                    .map(|(i, a)| objects::server_to_client::Answer {
+                    .map(|(i, a)| aimongus_types::server_to_client::Answer {
                         answer: a.clone().unwrap_or("".to_string()),
                         player_id: i as u8,
                     })
@@ -336,17 +336,6 @@ fn join_room(
         ))
     } else {
         return Err(BadRequest("session does not exist".to_string()));
-    }
-}
-impl TryFrom<Message> for ClientResponse {
-    type Error = serde_json::Error;
-
-    fn try_from(message: Message) -> serde_json::Result<Self> {
-        use serde::de::Error;
-        match message {
-            Message::Text(text) => serde_json::from_str(&text),
-            _ => Err(serde_json::Error::custom("Invalid message format")),
-        }
     }
 }
 

@@ -1,0 +1,17 @@
+[package]
+name = "aimongus_types"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ts-rs = "6.2"
+serde = { version = "1.0", features = ["derive"] }
+
+
+serde_json = { version = "1.0", optional = true }
+ws = { package = "rocket_ws", git = "https://github.com/SergioBenitez/Rocket.git", rev = "a82508b403420bd941c32ddec3ee3e4875f2b8a5", optional = true }
+
+[features]
+server = ["ws", "serde_json"]

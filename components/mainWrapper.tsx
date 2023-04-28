@@ -1,4 +1,4 @@
-import { ClientGameStateView } from "../backstab/bindings/ClientGameStateView";
+import { ClientGameStateView } from "../aimongus_types/bindings/ClientGameStateView";
 import { NUM_QUESTIONS_PER_GAME } from "../lib/constants";
 import { Col } from "./layout/col";
 
