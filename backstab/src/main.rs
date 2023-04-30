@@ -479,6 +479,7 @@ async fn handle_client_message(
     session: Arc<Mutex<Session>>,
     _sink: &mut SplitSink<DuplexStream, Message>, // TODO use for sending error responses
 ) {
+    println!("client message: {:?}", message);
     let broadcast = match message {
         ClientResponse::StartGame => {
             let mut locked_session = session.lock().unwrap();

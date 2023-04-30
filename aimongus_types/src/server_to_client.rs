@@ -1,8 +1,9 @@
+use serde::Deserialize;
 use ts_rs::TS;
 
 #[derive(TS)]
 #[ts(export)]
-#[derive(serde::Serialize, Clone)]
+#[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct ClientGameStateView {
     pub number_of_players: u8,
     pub current_turn: u8,
@@ -13,7 +14,7 @@ pub struct ClientGameStateView {
 
 #[derive(TS)]
 #[ts(export)]
-#[derive(serde::Serialize, Clone)]
+#[derive(serde::Serialize, Clone, Deserialize, Debug)]
 #[serde(tag = "state", content = "content")]
 pub enum ClientGameState {
     Lobby {
@@ -42,7 +43,7 @@ pub enum ClientGameState {
 
 #[derive(TS)]
 #[ts(export)]
-#[derive(serde::Serialize, Clone)]
+#[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct Answer {
     pub answer: String,
     pub player_id: u8,
