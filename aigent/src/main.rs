@@ -20,6 +20,7 @@ use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView};
 use futures_channel::mpsc::UnboundedSender;
 use futures_util::SinkExt;
 use futures_util::{future, pin_mut, stream::SplitSink, StreamExt};
+use rand::Rng;
 use reqwest::Url;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -106,11 +107,28 @@ async fn call_openai(request: ApiRequest) -> Result<ApiResponse, Box<dyn std::er
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let connect_addr: String = env::args()
-        .nth(1)
-        .unwrap_or_else(|| panic!("this program requires at least one argument"));
+    //Arg 1 = Room code
+    //Arg 2 = AI code
 
-    let url: Url = url::Url::parse(&connect_addr).unwrap();
+    let room_code: String = env::args()
+        .nth(1)
+        .unwrap_or_else(|| panic!("this program requires at least two arguments"));
+
+    let ai_code: String = env::args()
+        .nth(2)
+        .unwrap_or_else(|| panic!("this program requires at least two arguments"));
+
+    let mut rng = rand::thread_rng();
+    let identity: u128 = rng.gen();
+    let mut base_url: String = "ws://127.0.0.1:8000/join-room?identity=".to_owned();
+    //Unhinged programmer moment
+    base_url.push_str(identity.to_string().as_str());
+    base_url.push_str("&room=");
+    base_url.push_str(&room_code);
+    base_url.push_str("&aikey=");
+    base_url.push_str(&ai_code);
+    println!("{}", base_url);
+    let url: Url = url::Url::parse(&base_url).unwrap();
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect");
     println!("WebSocket handshake has been successfully completed");
 

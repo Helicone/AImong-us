@@ -14,6 +14,7 @@ use ws::stream::DuplexStream;
 use ws::Message;
 
 use std::collections::HashMap;
+use std::str;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
 
@@ -36,7 +37,6 @@ impl std::fmt::Display for RoomCode {
 
 impl RoomCode {
     pub fn new() -> Self {
-        use rand::Rng;
         const MAX_ROOM_CODE: usize = 26usize.pow(5) - 1;
         let num = rand::thread_rng().gen_range(0..MAX_ROOM_CODE);
         let mut code_chars = [0u8; 4];
@@ -115,6 +115,8 @@ struct Session {
     broadcast: async_broadcast::Sender<ServerMessage>,
     turns: Vec<Turn>,
     stage: GameStage,
+    aikey: u128,
+    ai_player: Option<ClientIdentity>,
 }
 
 #[derive(Debug)]
@@ -142,6 +144,8 @@ impl Session {
         creator_identity: ClientIdentity,
         room_code: &RoomCode,
     ) -> (Self, async_broadcast::Receiver<ServerMessage>) {
+        let mut rng = rand::thread_rng();
+        let random_u128: u128 = rng.gen();
         let (sender, receiver) = async_broadcast::broadcast(1);
         (
             Self {
@@ -151,12 +155,14 @@ impl Session {
                 broadcast: sender,
                 turns: vec![],
                 stage: GameStage::NotStarted,
+                aikey: random_u128,
+                ai_player: None,
             },
             receiver,
         )
     }
 
-    fn add_player(&mut self, identity: ClientIdentity) {
+    fn add_player(&mut self, identity: ClientIdentity, is_ai: bool) {
         if self
             .players
             .iter()
@@ -164,7 +170,11 @@ impl Session {
             .next()
             .is_none()
         {
-            self.players.push(Player::new(identity));
+            let player = Player::new(identity);
+            if is_ai {
+                self.ai_player = Some(player.identity);
+            }
+            self.players.push(player);
         }
     }
 
@@ -330,6 +340,7 @@ fn create_room(
 ) -> ws::Channel<'static> {
     let room_code = RoomCode::new();
     let (session, receiver) = Session::new_with_creator(identity, &room_code);
+    println!("New session created with AI code: {}", session.aikey);
     let session = Arc::new(Mutex::new(session));
     sessions
         .0
@@ -342,10 +353,11 @@ fn create_room(
 
 /// Joins an existing session using its random code.
 /// Once joined, client subscribes to the session's websocket.
-#[get("/join-room?<identity>&<room>")]
+#[get("/join-room?<identity>&<room>&<aikey>")]
 fn join_room(
     identity: ClientIdentity,
     room: RoomCode,
+    aikey: Option<ClientIdentity>,
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
 ) -> Result<ws::Channel<'static>, BadRequest<String>> {
@@ -355,9 +367,13 @@ fn join_room(
         let receiver;
         {
             let mut session = session.lock().unwrap();
-            println!("adding player");
+            let is_ai = match aikey {
+                Some(key) => key.0 == session.aikey,
+                None => false,
+            };
+            println!("adding player, is_ai={}", is_ai);
             println!("current players: {:#?}", session.players);
-            session.add_player(identity);
+            session.add_player(identity, is_ai);
             receiver = session.broadcast.new_receiver();
         }
         Ok(manage_game_socket(
@@ -496,7 +512,7 @@ async fn end_voting(session: Arc<Mutex<Session>>, turn_size: usize) {
             // that turn already finished
             return;
         }
-        let mut turn = session.current_turn_mut();
+        let turn = session.current_turn_mut();
         turn.reviewing_started_at = Some(std::time::SystemTime::now());
 
         let answers = turn

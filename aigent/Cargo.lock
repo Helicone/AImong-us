@@ -15,6 +15,7 @@ dependencies = [
  "aimongus_types",
  "futures-channel",
  "futures-util",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",
