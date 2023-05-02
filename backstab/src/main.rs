@@ -108,10 +108,16 @@ enum GameStage {
 struct Session {
     room_code: RoomCode,
     creator_identity: ClientIdentity,
-    players: Vec<ClientIdentity>,
+    players: Vec<Player>,
     broadcast: async_broadcast::Sender<ServerMessage>,
     turns: Vec<Turn>,
     stage: GameStage,
+}
+
+#[derive(Debug)]
+struct Player {
+    identity: ClientIdentity,
+    score: u32,
 }
 
 impl Session {
@@ -124,7 +130,10 @@ impl Session {
             Self {
                 room_code: room_code.clone(),
                 creator_identity,
-                players: vec![creator_identity],
+                players: vec![Player {
+                    identity: creator_identity,
+                    score: 0,
+                }],
                 broadcast: sender,
                 turns: vec![],
                 stage: GameStage::NotStarted,
@@ -137,11 +146,11 @@ impl Session {
         if self
             .players
             .iter()
-            .filter(|i| i.0 == identity.0)
+            .filter(|p| p.identity.0 == identity.0)
             .next()
             .is_none()
         {
-            self.players.push(identity);
+            self.players.push(Player { identity, score: 0 });
         }
     }
 
@@ -263,7 +272,7 @@ impl Session {
     fn player_index(&self, identity: &ClientIdentity) -> usize {
         self.players
             .iter()
-            .position(|p| p == identity)
+            .position(|p| p.identity == *identity)
             .expect("client identity missing from players")
     }
 }
@@ -450,18 +459,40 @@ async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
     broadcast.broadcast(ServerMessage).await.unwrap();
 }
 
-async fn end_voting(session: Arc<Mutex<Session>>, turn: usize) {
+async fn end_voting(session: Arc<Mutex<Session>>, turn_size: usize) {
     let broadcast = {
-        let mut session = session.lock().unwrap();
-        if !matches!(session.stage, GameStage::Voting) {
+        let imm_session = session.lock().unwrap();
+
+        if !matches!(imm_session.stage, GameStage::Voting) {
             return;
         }
-        if session.turns.len() - 1 > turn {
+        if imm_session.turns.len() - 1 > turn_size {
             // that turn already finished
             return;
         }
+
+        let mut my_session = session.lock().unwrap();
+        let mut turn = my_session.current_turn_mut();
+
+        let answers = turn
+            .answers
+            .iter()
+            .enumerate()
+            .map(|(i, a)| aimongus_types::server_to_client::Answer {
+                answer: a.clone().unwrap_or("".to_string()),
+                player_id: i as u8,
+            })
+            .collect::<Vec<_>>();
+        {
+            for a in answers {
+                my_session.players[a.player_id as usize].score += 1
+            }
+        }
+        let mut session = session.lock().unwrap();
         session.stage = GameStage::Reviewing;
-        session.current_turn_mut().reviewing_started_at = Some(std::time::SystemTime::now());
+        let turn = session.current_turn_mut();
+
+        turn.reviewing_started_at = Some(std::time::SystemTime::now());
         session.broadcast.clone()
     };
 
