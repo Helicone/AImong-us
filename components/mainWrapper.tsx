@@ -45,7 +45,7 @@ export function MainWrapper(props: MainWrapperProps) {
             Turn {game?.current_turn} / {NUM_QUESTIONS_PER_GAME}
           </div>
           <div>Hello</div>
-          <div>{game?.number_of_players} players</div>
+          <div>{game?.number_of_players + 1} players (incl. bot)</div>
         </h2>
       )}
       <Col className="grow px-6 py-4">{children}</Col>

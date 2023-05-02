@@ -5,7 +5,6 @@ import {
   NUM_QUESTIONS_PER_GAME,
   TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
 } from "../../../lib/constants";
-import { GameResponse } from "../../../pages/api/odd-bot-out/game";
 import { GameStateProps } from "../../../pages/game";
 import { Timer } from "./timer";
 
@@ -29,7 +28,8 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
       <div className="flex flex-row justify-between col-span-2">
         <div className="flex flex-row">
           <p className="p-2">
-            {game.number_of_players} / {NUM_PLAYERS} Players Joined
+            {game.number_of_players + 1} / {NUM_PLAYERS + 1} Players Joined
+            (incl. bot)
           </p>
         </div>
       </div>
