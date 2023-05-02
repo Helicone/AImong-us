@@ -5,6 +5,7 @@ use aimongus_types::client_to_server::ClientResponse;
 use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView};
 use futures::stream::SplitSink;
 use objects::server_to_server::ServerMessage;
+use rand::Rng;
 use rocket::{response::status::BadRequest, State};
 
 mod objects;
@@ -116,8 +117,21 @@ struct Session {
 
 #[derive(Debug)]
 struct Player {
+    session_id: u128,
     identity: ClientIdentity,
     score: u32,
+}
+
+impl Player {
+    fn new(identity: ClientIdentity) -> Self {
+        let mut rng = rand::thread_rng();
+        let random_u128: u128 = rng.gen();
+        Player {
+            session_id: random_u128,
+            identity: identity,
+            score: 0,
+        }
+    }
 }
 
 impl Session {
@@ -130,10 +144,7 @@ impl Session {
             Self {
                 room_code: room_code.clone(),
                 creator_identity,
-                players: vec![Player {
-                    identity: creator_identity,
-                    score: 0,
-                }],
+                players: vec![Player::new(creator_identity)],
                 broadcast: sender,
                 turns: vec![],
                 stage: GameStage::NotStarted,
@@ -150,7 +161,7 @@ impl Session {
             .next()
             .is_none()
         {
-            self.players.push(Player { identity, score: 0 });
+            self.players.push(Player::new(identity));
         }
     }
 
