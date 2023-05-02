@@ -83,6 +83,7 @@ struct Turn {
     reviewing_started_at: Option<std::time::SystemTime>,
     answers: Vec<Option<String>>,
     votes: Vec<Option<u8>>,
+    ready_for_next_turn: Vec<bool>,
 }
 
 impl Turn {
@@ -94,6 +95,7 @@ impl Turn {
             reviewing_started_at: None,
             answers: vec![None; num_players],
             votes: vec![None; num_players],
+            ready_for_next_turn: vec![false; num_players],
         }
     }
 }
@@ -117,6 +119,7 @@ struct Session {
 
 #[derive(Debug)]
 struct Player {
+    // Random id that is only unique within this session for this user
     session_id: u128,
     identity: ClientIdentity,
     score: u32,
@@ -259,6 +262,16 @@ impl Session {
                         votes: turn.votes.clone(),
                         answers,
                         eliminated,
+                        number_of_players_ready: turn.ready_for_next_turn.iter().fold(
+                            0,
+                            |acc, turn| {
+                                if *turn {
+                                    acc + 1
+                                } else {
+                                    acc
+                                }
+                            },
+                        ),
                     },
                     number_of_players: self.players.len() as u8,
                     current_turn: self.turns.len() as u8,
@@ -471,19 +484,20 @@ async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
 }
 
 async fn end_voting(session: Arc<Mutex<Session>>, turn_size: usize) {
+    println!("ending voting");
     let broadcast = {
-        let imm_session = session.lock().unwrap();
+        let mut session = session.lock().unwrap();
 
-        if !matches!(imm_session.stage, GameStage::Voting) {
+        if !matches!(session.stage, GameStage::Voting) {
+            // TODO handle this better
             return;
         }
-        if imm_session.turns.len() - 1 > turn_size {
+        if session.turns.len() - 1 > turn_size {
             // that turn already finished
             return;
         }
-
-        let mut my_session = session.lock().unwrap();
-        let mut turn = my_session.current_turn_mut();
+        let mut turn = session.current_turn_mut();
+        turn.reviewing_started_at = Some(std::time::SystemTime::now());
 
         let answers = turn
             .answers
@@ -494,16 +508,14 @@ async fn end_voting(session: Arc<Mutex<Session>>, turn_size: usize) {
                 player_id: i as u8,
             })
             .collect::<Vec<_>>();
+        drop(turn);
         {
             for a in answers {
-                my_session.players[a.player_id as usize].score += 1
+                session.players[a.player_id as usize].score += 1
             }
         }
-        let mut session = session.lock().unwrap();
         session.stage = GameStage::Reviewing;
-        let turn = session.current_turn_mut();
 
-        turn.reviewing_started_at = Some(std::time::SystemTime::now());
         session.broadcast.clone()
     };
 
@@ -583,6 +595,28 @@ async fn handle_client_message(
             let turn = session.current_turn_mut();
             turn.votes[player_index] = Some(vote);
             session.broadcast.clone()
+        }
+        ClientResponse::ReadyForNextTurn => {
+            let mut locked_session = session.lock().unwrap();
+            if !matches!(locked_session.stage, GameStage::Reviewing) {
+                // TODO send an error instead of silently exiting
+                return;
+            }
+            let turn_number = locked_session.players.len();
+            let player_index = locked_session.player_index(&identity);
+            let turn = locked_session.current_turn_mut();
+            turn.ready_for_next_turn[player_index] = true;
+            if turn.ready_for_next_turn.iter().all(|ready| *ready) {
+                locked_session.stage = GameStage::Answering;
+                locked_session.turns.push(Turn::new(turn_number));
+                let async_session = Arc::clone(&session);
+                tokio::task::spawn(async move {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(ANSWERING_TIMEOUT_SECS))
+                        .await;
+                    end_answering(async_session, turn_number).await;
+                });
+            }
+            locked_session.broadcast.clone()
         }
     };
     // Send new game state to all clients, including this one

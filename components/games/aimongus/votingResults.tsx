@@ -7,7 +7,7 @@ import {
 import { GameStateProps } from "../../../pages/game";
 
 export default function VotingResults(props: GameStateProps<"Reviewing">) {
-  const { game } = props;
+  const { game, sendMessage } = props;
 
   const currentQuestion = game.game_state.content.question;
   if (!currentQuestion) {
@@ -34,7 +34,19 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
             <p className="text-base">Nobody was eliminated...</p>
           )}
         </div>
-        Hello
+        Number of players ready:{" "}
+        {game.game_state.content.number_of_players_ready ?? 0} /{" "}
+        {game.number_of_players}
+        <div>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => {
+              sendMessage("ReadyForNextTurn");
+            }}
+          >
+            Ready for next turn
+          </button>
+        </div>
       </div>
     </div>
   );

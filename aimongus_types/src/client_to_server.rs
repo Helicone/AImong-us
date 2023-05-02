@@ -9,6 +9,7 @@ pub enum ClientResponse {
     StartGame,
     SubmitAnswer(String),
     SubmitVote(u8),
+    ReadyForNextTurn,
 }
 
 #[cfg(feature = "server")]

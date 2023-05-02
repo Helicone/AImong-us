@@ -38,6 +38,7 @@ pub enum ClientGameState {
         votes: Vec<Option<u8>>,
         // true if a bot was eliminated
         eliminated: Option<(u8, bool)>,
+        number_of_players_ready: u8,
     },
 }
 
