@@ -13,7 +13,7 @@ export default function LoggedInFlow() {
         <button
           className="border-2 border-gray-800 bg-gray-600 text-white p-2 w-full hover:opacity-90"
           onClick={() => {
-            console.log("play odd bot out");
+            console.log("play AImong Us");
             fetch("/api/odd-bot-out/game?get_new_game=true")
               .then((res) => {
                 console.log("RES", res);
@@ -27,7 +27,7 @@ export default function LoggedInFlow() {
               });
           }}
         >
-          Play Odd Bot Out
+          Play AImong Us
         </button>
         <button
           disabled={true}

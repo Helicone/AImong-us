@@ -1,4 +1,3 @@
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
@@ -7,7 +6,7 @@ export default function Lobby() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col items-center w-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 min-h-screen">
+    <div className="flex flex-col items-center w-full">
       <div className="flex flex-col max-w-lg w-full gap-2 text-center mt-20 bg-white p-8 rounded-lg shadow-lg">
         <h1 className="text-4xl font-bold text-gray-800 mb-4">
           Find the bot or die 🔪
@@ -24,7 +23,7 @@ export default function Lobby() {
             <button
               className="bg-purple-500 text-white px-4 py-2 rounded-md ml-2 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
               onClick={() => {
-                console.log("play odd bot out");
+                console.log("play AImong Us");
                 router.push("/game?room_id=" + roomId);
               }}
             >
@@ -34,7 +33,7 @@ export default function Lobby() {
           <button
             className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-800"
             onClick={() => {
-              console.log("play odd bot out");
+              console.log("play AImong Us");
               router.push("/game?get_new_game=true");
             }}
           >

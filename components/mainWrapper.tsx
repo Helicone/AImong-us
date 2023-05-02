@@ -11,15 +11,15 @@ interface MainWrapperProps {
 export function MainWrapper(props: MainWrapperProps) {
   const { children, title, game } = props;
   return (
-    <main className="flex flex-col w-full flex-1 min-h-screen justify-between bg-violet-50">
+    <main className="flex flex-col w-full flex-1 justify-between">
       <h1 className="text-center w-full py-2 border-b px-5 ">
         <div className="">
           <div className="flex md:flex-row w-full justify-between items-center">
             <div className="text-center w-full"></div>
-            <div className="text-center w-full text-5xl font-mono">
+            <div className="text-center w-full text-5xl font-mono text-white">
               AImong.us
             </div>
-            <div className=" w-full text-right">
+            <div className="w-full text-right">
               {game && (
                 <button
                   className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
@@ -54,11 +54,8 @@ export function MainWrapper(props: MainWrapperProps) {
           <a href="https://twitter.com/valyr_ai">
             <i>Twitter</i>
           </a>
-          <a href="https://github.com/PromptZero/valyr-chat">
+          <a href="https://github.com/helicone/aimong-us">
             <i>Github</i>
-          </a>
-          <a href="https://discord.gg/2TkeWdXNPQ">
-            <i>Discord</i>
           </a>
         </div>
       </div>

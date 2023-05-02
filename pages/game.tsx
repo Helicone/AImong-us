@@ -47,7 +47,7 @@ function GameIsolateChannel({
 
     return (
       <div>
-        <MainWrapper title="Odd Bot Out" game={gameState}>
+        <MainWrapper title="AImong Us" game={gameState}>
           <GameState game={gameState as any} sendMessage={sendMessage} />
         </MainWrapper>
       </div>
