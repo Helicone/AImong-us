@@ -2,7 +2,7 @@
 extern crate rocket;
 
 use aimongus_types::client_to_server::ClientResponse;
-use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView};
+use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView, SessionId};
 use futures::stream::SplitSink;
 use objects::server_to_server::ServerMessage;
 use rand::Rng;
@@ -117,17 +117,6 @@ struct Session {
     stage: GameStage,
     aikey: u128,
     ai_player: Option<ClientIdentity>,
-}
-
-#[derive(Debug, Clone)]
-pub struct SessionId(pub u128);
-
-impl SessionId {
-    fn new() -> Self {
-        let mut rng = rand::thread_rng();
-        let random_u128: u128 = rng.gen();
-        Self(random_u128)
-    }
 }
 #[derive(Clone, Debug)]
 struct Player {
@@ -585,7 +574,7 @@ async fn end_voting(session: Arc<Mutex<Session>>, turn_size: usize) {
 
         {
             for a in answers {
-                let mut player: &mut Player = locked_session.get_player_using_id_mut(a.0);
+                let player: &mut Player = locked_session.get_player_using_id_mut(a.0);
                 player.score = player.score + 1;
             }
         }
@@ -619,7 +608,6 @@ async fn handle_client_message(
                 // TODO send an error instead of silently exiting
                 return;
             }
-            let num_players = locked_session.players.len();
             locked_session.stage = GameStage::Answering;
             locked_session.turns.push(Turn::new());
             let async_session = Arc::clone(&session);

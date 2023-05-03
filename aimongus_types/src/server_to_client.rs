@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use rand::Rng;
 use serde::Deserialize;
 use ts_rs::TS;
 
@@ -50,4 +51,17 @@ pub enum ClientGameState {
 pub struct Answer {
     pub answer: String,
     pub player_id: u128,
+}
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(serde::Serialize, Clone, Deserialize, Debug)]
+pub struct SessionId(pub u128);
+
+impl SessionId {
+    pub fn new() -> Self {
+        let mut rng = rand::thread_rng();
+        let random_u128: u128 = rng.gen();
+        Self(random_u128)
+    }
 }
