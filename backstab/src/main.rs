@@ -438,11 +438,13 @@ async fn handle_incoming_message(
     use rocket::futures::SinkExt;
     match message {
         UnifiedStreamResult::FromWs(m) => {
-            let p_result: Result<ClientResponse, _> = m.unwrap().try_into();
+            let p_result: Result<ClientResponse, _> = m.as_ref().unwrap().try_into();
             if let Ok(p_result) = p_result {
                 handle_client_message(identity, p_result, session.clone(), sink).await;
             } else {
+                println!("Could not parse: {:?}", m);
                 println!("Error parsing p_result: {:?}", p_result);
+
                 let _ = sink.send(Message::Text("Ran into error".to_owned())).await;
             }
         }

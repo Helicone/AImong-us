@@ -10,6 +10,7 @@
 //!
 //! You can use this example together with the `server` example.
 
+use std::fmt::format;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
@@ -120,7 +121,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut rng = rand::thread_rng();
     let identity: u128 = rng.gen();
-    let mut base_url: String = "ws://127.0.0.1:8000/join-room?identity=".to_owned();
+    let mut base_url: String = format!(
+        "ws://{}/join-room?identity=",
+        env::var("BACK_STAB_BASE_URL").unwrap_or("localhost:8000".to_owned()),
+    )
+    .to_owned();
     //Unhinged programmer moment
     base_url.push_str(identity.to_string().as_str());
     base_url.push_str("&room=");

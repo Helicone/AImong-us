@@ -1,0 +1,26 @@
+# Use the official Python image as the base image
+FROM python:3.9
+
+# Install Rust and Cargo
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN rustup default nightly
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the requirements file into the container
+COPY aigent/requirements.txt .
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --trusted-host pypi.python.org -r requirements.txt
+
+# Copy the rest of the application code
+COPY aigent/ .
+COPY aimongus_types ../aimongus_types
+
+# Expose the port the app runs on
+EXPOSE 5934
+
+# Define the command to run the application using the uvicorn server
+CMD ["python3", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5934"]

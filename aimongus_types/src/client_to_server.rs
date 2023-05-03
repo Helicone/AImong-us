@@ -16,10 +16,10 @@ pub enum ClientResponse {
 use ws::Message;
 
 #[cfg(feature = "server")]
-impl TryFrom<Message> for ClientResponse {
+impl TryFrom<&Message> for ClientResponse {
     type Error = serde_json::Error;
 
-    fn try_from(message: Message) -> serde_json::Result<Self> {
+    fn try_from(message: &Message) -> serde_json::Result<Self> {
         use serde::de::Error;
         match message {
             Message::Text(text) => serde_json::from_str(&text),
