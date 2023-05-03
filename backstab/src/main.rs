@@ -87,7 +87,7 @@ struct Turn {
 }
 
 impl Turn {
-    fn new(num_players: usize) -> Self {
+    fn new() -> Self {
         Self {
             question: "How many TODOs could a TODO do if a TODO could do TODOs?".to_string(),
             started_at: std::time::SystemTime::now(),
@@ -229,8 +229,12 @@ impl Session {
                         votes: turn
                             .votes
                             .iter()
-                            .map(|(k, v)| (self.get_player(k), self.get_player(v)))
-                            .map(|(p1, p2)| (p1.session_id.0, p2.session_id.0))
+                            .map(|(k, v)| {
+                                (
+                                    self.get_player(k).session_id.0,
+                                    self.get_player(v).session_id.0,
+                                )
+                            })
                             .collect(),
                         question: turn.question.clone(),
                         started_at: turn
@@ -274,10 +278,6 @@ impl Session {
                         )
                     })
                     .collect();
-                let mut votecounts = turn
-                    .votes
-                    .iter()
-                    .map(|(k, v)| (k, turn.votes.values().filter(|v| **v == *k).count()));
                 ClientGameStateView {
                     game_state: ClientGameState::Reviewing {
                         question: turn.question.clone(),
@@ -287,7 +287,16 @@ impl Session {
                             .duration_since(std::time::UNIX_EPOCH)
                             .unwrap()
                             .as_millis() as u64,
-                        votes: turn.votes.iter().map(|(k, v)| (k.0, v.0)).collect(),
+                        votes: turn
+                            .votes
+                            .iter()
+                            .map(|(k, v)| {
+                                (
+                                    self.get_player(k).session_id.0,
+                                    self.get_player(v).session_id.0,
+                                )
+                            })
+                            .collect(),
                         answers,
                         //eliminated,
                         number_of_players_ready: turn.ready_for_next_turn.len() as u8,
@@ -612,7 +621,7 @@ async fn handle_client_message(
             }
             let num_players = locked_session.players.len();
             locked_session.stage = GameStage::Answering;
-            locked_session.turns.push(Turn::new(num_players));
+            locked_session.turns.push(Turn::new());
             let async_session = Arc::clone(&session);
             let turn_number = locked_session.turns.len() - 1;
             tokio::task::spawn(async move {
@@ -638,7 +647,7 @@ async fn handle_client_message(
             if turn
                 .answers
                 .keys()
-                .all(|id| players.iter().filter(|p| p.identity == *id).count() > 0)
+                .all(|id| players.iter().filter(|p| p.session_id.0 == id.0).count() > 0)
             {
                 locked_session.stage = GameStage::Voting;
                 locked_session.current_turn_mut().voting_started_at =
@@ -680,7 +689,7 @@ async fn handle_client_message(
             turn.ready_for_next_turn.insert(identity);
             if turn.ready_for_next_turn.iter().count() as f32 > turn.answers.len() as f32 * 0.50 {
                 locked_session.stage = GameStage::Answering;
-                locked_session.turns.push(Turn::new(turn_number));
+                locked_session.turns.push(Turn::new());
                 let async_session = Arc::clone(&session);
                 tokio::task::spawn(async move {
                     tokio::time::sleep(tokio::time::Duration::from_secs(ANSWERING_TIMEOUT_SECS))
