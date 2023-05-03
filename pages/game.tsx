@@ -82,17 +82,16 @@ export default function Home() {
   if (!user) {
     return <div>Not logged in</div>;
   }
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "ws://localhost:8000";
 
   if (router.query.get_new_game == "true") {
     return (
-      <Game
-        websocketAddress={`ws://localhost:8000/create-room?identity=${user}`}
-      />
+      <Game websocketAddress={`${baseUrl}/create-room?identity=${user}`} />
     );
   } else if (router.query.room_id) {
     return (
       <Game
-        websocketAddress={`ws://localhost:8000/join-room?identity=${user}&room=${router.query.room_id}`}
+        websocketAddress={`${baseUrl}/join-room?identity=${user}&room=${router.query.room_id}`}
       />
     );
   } else {
