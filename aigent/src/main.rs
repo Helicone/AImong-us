@@ -122,7 +122,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = rand::thread_rng();
     let identity: u128 = rng.gen();
     let mut base_url: String = format!(
-        "ws://{}/join-room?identity=",
+        "{}/join-room?identity=",
         env::var("BACK_STAB_BASE_URL").unwrap_or("localhost:8000".to_owned()),
     )
     .to_owned();

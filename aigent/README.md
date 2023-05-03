@@ -10,9 +10,9 @@ docker build -t fastapi-cargo-server . -f aigent/dockerfile
 # Env1 - Set Base URL
 
 # For Mac/Windows host.docker.internal
-BACK_STAB_BASE_URL=host.docker.internal:8000
+BACK_STAB_BASE_URL=ws://host.docker.internal:8000
 # For Linux you need to use the IP from your local network IP Address
-BACK_STAB_BASE_URL=192.168.1.XXX
+BACK_STAB_BASE_URL=ws://192.168.1.XXX
 # For prod
 BACK_STAB_BASE_URL=wss://api.among.us
 
