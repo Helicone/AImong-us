@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::Deserialize;
 use ts_rs::TS;
 
@@ -8,7 +10,7 @@ pub struct ClientGameStateView {
     pub number_of_players: u8,
     pub current_turn: u8,
     pub game_state: ClientGameState,
-    pub me: u8,
+    pub me: u128,
     pub room_code: String,
 }
 
@@ -28,16 +30,16 @@ pub enum ClientGameState {
     Voting {
         started_at: u64,
         question: String,
-        answers: Vec<Answer>,
-        votes: Vec<Option<u8>>,
+        answers: HashMap<u128, Answer>,
+        votes: HashMap<u128, u128>,
     },
     Reviewing {
         started_at: u64,
         question: String,
-        answers: Vec<Answer>,
-        votes: Vec<Option<u8>>,
+        answers: HashMap<u128, Answer>,
+        votes: HashMap<u128, u128>,
         // true if a bot was eliminated
-        eliminated: Option<(u8, bool)>,
+        //eliminated: Option<(u8, bool)>,
         number_of_players_ready: u8,
     },
 }
@@ -47,5 +49,5 @@ pub enum ClientGameState {
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct Answer {
     pub answer: String,
-    pub player_id: u8,
+    pub player_id: u128,
 }
