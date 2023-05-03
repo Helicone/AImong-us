@@ -48,7 +48,7 @@ export default function FindingPlayers(props: GameStateProps<"Lobby">) {
       )}
 
       <div className="text-sm right-0 bottom-0">
-        {game.number_of_players + 1} / {NUM_PLAYERS + 1} (incl. bot)
+        {game.number_of_players} / {NUM_PLAYERS}
       </div>
     </Col>
   );

@@ -14,9 +14,9 @@ use ws::stream::DuplexStream;
 use ws::Message;
 
 use std::collections::HashMap;
-use std::str;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
+use std::{env, str};
 
 struct SessionsMap(RwLock<HashMap<RoomCode, Arc<Mutex<Session>>>>);
 
@@ -178,10 +178,17 @@ impl Session {
         }
     }
 
+    fn non_bot_players(&self) -> Vec<&Player> {
+        self.players
+            .iter()
+            .filter(|p| p.identity != self.ai_player.unwrap_or(ClientIdentity(0)))
+            .collect()
+    }
+
     fn get_game_state_view(&self, identity: ClientIdentity) -> ClientGameStateView {
         match self.stage {
             GameStage::NotStarted => ClientGameStateView {
-                number_of_players: self.players.len() as u8,
+                number_of_players: self.non_bot_players().len() as u8,
                 game_state: ClientGameState::Lobby {
                     is_host: identity == self.creator_identity,
                 },
@@ -341,6 +348,19 @@ fn create_room(
     let room_code = RoomCode::new();
     let (session, receiver) = Session::new_with_creator(identity, &room_code);
     println!("New session created with AI code: {}", session.aikey);
+
+    // Spawn bot
+    let url = env::var("AIGENT_BASE_URL").unwrap();
+    let client = reqwest::Client::new();
+    let params = [
+        ("room_id", format!("{}", session.room_code)),
+        ("aicode", format!("{}", session.aikey)),
+    ];
+    tokio::task::spawn(async move {
+        let response = client.get(url).query(&params).send().await;
+        println!("got response: {:?}", response);
+    });
+
     let session = Arc::new(Mutex::new(session));
     sessions
         .0
@@ -624,7 +644,13 @@ async fn handle_client_message(
             let player_index = locked_session.player_index(&identity);
             let turn = locked_session.current_turn_mut();
             turn.ready_for_next_turn[player_index] = true;
-            if turn.ready_for_next_turn.iter().all(|ready| *ready) {
+            if turn
+                .ready_for_next_turn
+                .iter()
+                .filter(|ready| **ready)
+                .count() as f32
+                > turn.answers.len() as f32 * 0.50
+            {
                 locked_session.stage = GameStage::Answering;
                 locked_session.turns.push(Turn::new(turn_number));
                 let async_session = Arc::clone(&session);

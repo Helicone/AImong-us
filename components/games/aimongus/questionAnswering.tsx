@@ -28,8 +28,7 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
       <div className="flex flex-row justify-between col-span-2">
         <div className="flex flex-row">
           <p className="p-2">
-            {game.number_of_players + 1} / {NUM_PLAYERS + 1} Players Joined
-            (incl. bot)
+            {game.number_of_players} / {NUM_PLAYERS} Players Joined
           </p>
         </div>
       </div>
