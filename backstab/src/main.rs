@@ -2,7 +2,8 @@
 extern crate rocket;
 
 use aimongus_types::client_to_server::ClientResponse;
-use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView};
+use aimongus_types::server_to_client;
+use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView, SessionId};
 use futures::stream::SplitSink;
 use objects::server_to_server::ServerMessage;
 use rand::Rng;
@@ -13,18 +14,21 @@ mod objects;
 use ws::stream::DuplexStream;
 use ws::Message;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
 use std::{env, str};
 
 struct SessionsMap(RwLock<HashMap<RoomCode, Arc<Mutex<Session>>>>);
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ClientIdentity(pub u128);
 
 #[derive(Eq, Hash, PartialEq, Clone)]
 struct RoomCode([u8; 4]);
+
+const ANSWERING_TIMEOUT_SECS: u64 = 60;
+const VOTING_TIMEOUT_SECS: u64 = 60;
 
 impl std::fmt::Display for RoomCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -76,27 +80,77 @@ impl<'v> rocket::form::FromFormField<'v> for RoomCode {
     }
 }
 
+struct Answer {
+    answerer: ClientIdentity,
+    answer: String,
+    answer_id: SessionId,
+}
+impl Answer {
+    fn new(answerer: ClientIdentity, answer: String) -> Self {
+        let answer_id = SessionId::new();
+        Self {
+            answerer,
+            answer,
+            answer_id,
+        }
+    }
+}
+
 struct Turn {
     question: String,
     started_at: std::time::SystemTime,
     voting_started_at: Option<std::time::SystemTime>,
     reviewing_started_at: Option<std::time::SystemTime>,
-    answers: Vec<Option<String>>,
-    votes: Vec<Option<u8>>,
-    ready_for_next_turn: Vec<bool>,
+    answers: HashMap<ClientIdentity, Answer>,
+    votes: HashMap<ClientIdentity, ClientIdentity>,
+    ready_for_next_turn: HashSet<ClientIdentity>,
 }
 
 impl Turn {
-    fn new(num_players: usize) -> Self {
+    fn new() -> Self {
         Self {
             question: "How many TODOs could a TODO do if a TODO could do TODOs?".to_string(),
             started_at: std::time::SystemTime::now(),
             voting_started_at: None,
             reviewing_started_at: None,
-            answers: vec![None; num_players],
-            votes: vec![None; num_players],
-            ready_for_next_turn: vec![false; num_players],
+            answers: HashMap::new(),
+            votes: HashMap::new(),
+            ready_for_next_turn: HashSet::new(),
         }
+    }
+
+    fn answers_view(
+        &self,
+        client: ClientIdentity,
+        players: &Vec<Player>,
+    ) -> HashMap<server_to_client::SessionId, server_to_client::Answer> {
+        self.answers
+            .iter()
+            .map(|(i, a)| {
+                (
+                    players
+                        .iter()
+                        .find(|p| p.identity == a.answerer)
+                        .unwrap()
+                        .session_id
+                        .clone(),
+                    aimongus_types::server_to_client::Answer {
+                        answer: a.answer.clone(),
+                        number_of_votes: self.votes.iter().filter(|(_, v)| **v == *i).count() as u8,
+                        players_who_voted: vec![],
+                        is_me: a.answerer == client,
+                        answer_id: SessionId::new(),
+                    },
+                )
+            })
+            .collect()
+    }
+
+    fn get_answer(&self, answer_id: SessionId) -> Option<&Answer> {
+        self.answers
+            .iter()
+            .find(|(_, a)| a.answer_id == answer_id)
+            .map(|(_, a)| a)
     }
 }
 
@@ -115,48 +169,92 @@ struct Session {
     broadcast: async_broadcast::Sender<ServerMessage>,
     turns: Vec<Turn>,
     stage: GameStage,
-    aikey: u128,
-    ai_player: Option<ClientIdentity>,
+    aikey: SessionId,
 }
-
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Player {
     // Random id that is only unique within this session for this user
-    session_id: u128,
+    session_id: SessionId,
     identity: ClientIdentity,
     score: u32,
+    is_bot: bool,
 }
 
 impl Player {
-    fn new(identity: ClientIdentity) -> Self {
-        let mut rng = rand::thread_rng();
-        let random_u128: u128 = rng.gen();
+    fn new(identity: ClientIdentity, is_bot: bool) -> Self {
         Player {
-            session_id: random_u128,
+            session_id: SessionId::new(),
             identity: identity,
             score: 0,
+            is_bot,
+        }
+    }
+}
+
+impl From<Player> for server_to_client::Player {
+    fn from(player: Player) -> Self {
+        Self {
+            random_unique_id: player.session_id,
+            score: player.score,
+            is_bot: player.is_bot,
         }
     }
 }
 
 impl Session {
+    fn player_count(&self) -> usize {
+        self.players.len()
+    }
+
+    fn all_answered(&self) -> bool {
+        self.players
+            .iter()
+            .all(|p| self.has_client_answered(p.identity))
+    }
+
+    fn has_client_answered(&self, client_identity: ClientIdentity) -> bool {
+        self.current_turn()
+            .unwrap()
+            .answers
+            .contains_key(&client_identity)
+    }
+
+    fn has_client_voted(&self, client_identity: ClientIdentity) -> bool {
+        self.current_turn()
+            .unwrap()
+            .votes
+            .contains_key(&client_identity)
+    }
+
+    fn is_ready_for_next_turn(&self, client_identity: ClientIdentity) -> bool {
+        self.current_turn()
+            .unwrap()
+            .ready_for_next_turn
+            .contains(&client_identity)
+    }
+
+    fn get_ai_players(&self) -> Vec<ClientIdentity> {
+        self.players
+            .iter()
+            .filter(|p| p.is_bot)
+            .map(|p| p.identity)
+            .collect()
+    }
+
     fn new_with_creator(
         creator_identity: ClientIdentity,
         room_code: &RoomCode,
     ) -> (Self, async_broadcast::Receiver<ServerMessage>) {
-        let mut rng = rand::thread_rng();
-        let random_u128: u128 = rng.gen();
         let (sender, receiver) = async_broadcast::broadcast(1);
         (
             Self {
                 room_code: room_code.clone(),
                 creator_identity,
-                players: vec![Player::new(creator_identity)],
+                players: vec![Player::new(creator_identity, false)],
                 broadcast: sender,
                 turns: vec![],
                 stage: GameStage::NotStarted,
-                aikey: random_u128,
-                ai_player: None,
+                aikey: SessionId::new(),
             },
             receiver,
         )
@@ -170,150 +268,92 @@ impl Session {
             .next()
             .is_none()
         {
-            let player = Player::new(identity);
-            if is_ai {
-                self.ai_player = Some(player.identity);
-            }
+            let player = Player::new(identity, is_ai);
             self.players.push(player);
         }
     }
 
     fn non_bot_players(&self) -> Vec<&Player> {
-        self.players
-            .iter()
-            .filter(|p| p.identity != self.ai_player.unwrap_or(ClientIdentity(0)))
-            .collect()
+        self.players.iter().filter(|p| p.is_bot == false).collect()
     }
 
-    fn get_game_state_view(&self, identity: ClientIdentity) -> ClientGameStateView {
-        match self.stage {
-            GameStage::NotStarted => ClientGameStateView {
-                number_of_players: self.non_bot_players().len() as u8,
-                game_state: ClientGameState::Lobby {
-                    is_host: identity == self.creator_identity,
-                },
-                current_turn: self.turns.len() as u8,
-                me: self.player_index(&identity) as u8,
-                room_code: self.room_code.to_string(),
+    fn get_player(&self, identity: ClientIdentity) -> Option<&Player> {
+        self.players
+            .iter()
+            .filter(|p| p.identity == identity)
+            .next()
+    }
+
+    fn get_inner_game_state_view(&self, identity: ClientIdentity) -> ClientGameState {
+        let turn = self.current_turn();
+        match (&self.stage, turn) {
+            (GameStage::NotStarted, _) => ClientGameState::Lobby {
+                is_host: identity == self.creator_identity,
             },
-            GameStage::Answering => {
-                let turn = self.current_turn();
-                ClientGameStateView {
-                    game_state: ClientGameState::Answering {
-                        question: turn.question.clone(),
-                        started_at: turn
-                            .started_at
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .unwrap()
-                            .as_millis() as u64,
-                        you_voted: turn.answers[self.player_index(&identity)].is_some(),
-                    },
-                    number_of_players: self.players.len() as u8,
-                    current_turn: self.turns.len() as u8,
-                    me: self.player_index(&identity) as u8,
-                    room_code: self.room_code.to_string(),
-                }
-            }
-            GameStage::Voting => {
-                let turn = self.current_turn();
-                ClientGameStateView {
-                    game_state: ClientGameState::Voting {
-                        votes: turn.votes.clone(),
-                        question: turn.question.clone(),
-                        started_at: turn
-                            .voting_started_at
-                            .unwrap()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .unwrap()
-                            .as_millis() as u64,
-                        answers: turn
-                            .answers
-                            .iter()
-                            .enumerate()
-                            .map(|(i, a)| aimongus_types::server_to_client::Answer {
-                                answer: a.clone().unwrap_or("".to_string()),
-                                player_id: i as u8,
-                            })
-                            .collect(),
-                    },
-                    number_of_players: self.players.len() as u8,
-                    current_turn: self.turns.len() as u8,
-                    me: self.player_index(&identity) as u8,
-                    room_code: self.room_code.to_string(),
-                }
-            }
-            GameStage::Reviewing => {
-                let turn = self.current_turn();
-                let answers = turn
-                    .answers
-                    .iter()
-                    .enumerate()
-                    .map(|(i, a)| aimongus_types::server_to_client::Answer {
-                        answer: a.clone().unwrap_or("".to_string()),
-                        player_id: i as u8,
-                    })
-                    .collect::<Vec<_>>();
-                let mut votecounts = vec![0; self.players.len()];
-                for v in turn.votes.iter().filter_map(|v| *v) {
-                    votecounts[v as usize] += 1;
-                }
-                let max = votecounts.iter().max();
-                let eliminated = max.and_then(|max| {
-                    let first_max_pos = votecounts.iter().position(|count| *count == *max).unwrap();
-                    let has_second_max = votecounts[first_max_pos + 1..].contains(max);
-                    if has_second_max {
-                        None
-                    } else {
-                        Some((votecounts[first_max_pos], false))
-                    }
-                });
-                ClientGameStateView {
-                    game_state: ClientGameState::Reviewing {
-                        question: turn.question.clone(),
-                        started_at: turn
-                            .reviewing_started_at
-                            .unwrap()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .unwrap()
-                            .as_millis() as u64,
-                        votes: turn.votes.clone(),
-                        answers,
-                        eliminated,
-                        number_of_players_ready: turn.ready_for_next_turn.iter().fold(
-                            0,
-                            |acc, turn| {
-                                if *turn {
-                                    acc + 1
-                                } else {
-                                    acc
-                                }
-                            },
-                        ),
-                    },
-                    number_of_players: self.players.len() as u8,
-                    current_turn: self.turns.len() as u8,
-                    me: self.player_index(&identity) as u8,
-                    room_code: self.room_code.to_string(),
-                }
-            }
-            GameStage::GameOver => todo!(),
+            (GameStage::Answering, Some(turn)) => ClientGameState::Answering {
+                question: turn.question.clone(),
+                started_at: turn
+                    .started_at
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+                you_answered: turn.answers.contains_key(&identity),
+            },
+            (GameStage::Voting, Some(turn)) => ClientGameState::Voting {
+                question: turn.question.clone(),
+                started_at: turn
+                    .voting_started_at
+                    .unwrap()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+                answers: turn.answers_view(identity, &self.players),
+            },
+            (GameStage::Reviewing, Some(turn)) => ClientGameState::Reviewing {
+                question: turn.question.clone(),
+                started_at: turn
+                    .reviewing_started_at
+                    .unwrap()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+                answers: turn.answers_view(identity, &self.players),
+                number_of_players_ready: turn.ready_for_next_turn.len() as u8,
+            },
+            (GameStage::GameOver, _) => todo!(),
+            _ => panic!("Invalid game state"),
         }
     }
 
-    fn current_turn(&self) -> &Turn {
-        let i = self.turns.len() - 1;
-        &self.turns[i]
+    fn get_game_state_view(&self, identity: ClientIdentity) -> ClientGameStateView {
+        ClientGameStateView {
+            number_of_players: self.non_bot_players().len() as u8,
+            game_state: self.get_inner_game_state_view(identity),
+            current_turn: self.turns.len() as u8,
+            me: self.player(&identity).unwrap().session_id.clone(),
+            room_code: self.room_code.to_string(),
+        }
     }
 
-    fn current_turn_mut(&mut self) -> &mut Turn {
-        let i = self.turns.len() - 1;
-        &mut self.turns[i]
+    fn current_turn(&self) -> Option<&Turn> {
+        self.turns.last()
     }
 
-    fn player_index(&self, identity: &ClientIdentity) -> usize {
+    fn current_turn_mut(&mut self) -> Option<&mut Turn> {
+        self.turns.last_mut()
+    }
+
+    fn player(&self, identity: &ClientIdentity) -> Option<&Player> {
         self.players
             .iter()
-            .position(|p| p.identity == *identity)
+            .filter(|p| p.identity == *identity)
+            .next()
+    }
+
+    fn get_player_mut(&mut self, identity: &ClientIdentity) -> &mut Player {
+        self.players
+            .iter_mut()
+            .find(|p| p.identity == *identity)
             .expect("client identity missing from players")
     }
 }
@@ -347,14 +387,14 @@ fn create_room(
 ) -> ws::Channel<'static> {
     let room_code = RoomCode::new();
     let (session, receiver) = Session::new_with_creator(identity, &room_code);
-    println!("New session created with AI code: {}", session.aikey);
+    // println!("New session created with AI code: {}", session.aikey);
 
     // Spawn bot
     let url = env::var("AIGENT_BASE_URL").unwrap();
     let client = reqwest::Client::new();
     let params = [
         ("room_id", format!("{}", session.room_code)),
-        ("aicode", format!("{}", session.aikey)),
+        ("aicode", format!("{}", session.aikey.0)),
     ];
     tokio::task::spawn(async move {
         let response = client.get(url).query(&params).send().await;
@@ -377,7 +417,7 @@ fn create_room(
 fn join_room(
     identity: ClientIdentity,
     room: RoomCode,
-    aikey: Option<ClientIdentity>,
+    aikey: Option<u32>,
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
 ) -> Result<ws::Channel<'static>, BadRequest<String>> {
@@ -387,10 +427,9 @@ fn join_room(
         let receiver;
         {
             let mut session = session.lock().unwrap();
-            let is_ai = match aikey {
-                Some(key) => key.0 == session.aikey,
-                None => false,
-            };
+
+            let is_ai = aikey.map(|key| key == session.aikey.0).unwrap_or(false);
+
             println!("adding player, is_ai={}", is_ai);
             println!("current players: {:#?}", session.players);
             session.add_player(identity, is_ai);
@@ -507,7 +546,8 @@ async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
             return;
         }
         locked_session.stage = GameStage::Voting;
-        locked_session.current_turn_mut().voting_started_at = Some(std::time::SystemTime::now());
+        locked_session.current_turn_mut().unwrap().voting_started_at =
+            Some(std::time::SystemTime::now());
         let async_session = Arc::clone(&session);
         let turn_number = locked_session.turns.len() - 1;
         tokio::task::spawn(async move {
@@ -524,45 +564,64 @@ async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
 async fn end_voting(session: Arc<Mutex<Session>>, turn_size: usize) {
     println!("ending voting");
     let broadcast = {
-        let mut session = session.lock().unwrap();
+        let mut locked_session = session.lock().unwrap();
 
-        if !matches!(session.stage, GameStage::Voting) {
+        if !matches!(locked_session.stage, GameStage::Voting) {
             // TODO handle this better
             return;
         }
-        if session.turns.len() - 1 > turn_size {
+        if locked_session.turns.len() - 1 > turn_size {
             // that turn already finished
             return;
         }
-        let turn = session.current_turn_mut();
-        turn.reviewing_started_at = Some(std::time::SystemTime::now());
-
-        let answers = turn
-            .answers
-            .iter()
-            .enumerate()
-            .map(|(i, a)| aimongus_types::server_to_client::Answer {
-                answer: a.clone().unwrap_or("".to_string()),
-                player_id: i as u8,
-            })
-            .collect::<Vec<_>>();
-        drop(turn);
         {
-            for a in answers {
-                session.players[a.player_id as usize].score += 1
-            }
+            let turn = locked_session.current_turn_mut().unwrap();
+            turn.reviewing_started_at = Some(std::time::SystemTime::now());
         }
-        session.stage = GameStage::Reviewing;
 
-        session.broadcast.clone()
+        // {
+        //     for a in answers {
+        //         let player: &mut Player = locked_session.get_player_using_id_mut(a.0);
+        //         player.score = player.score + 1;
+        //     }
+        // }
+
+        // let bot_id = session.players.iter().find(|p| p.is_bot).unwrap().identity;
+        // session.players.iter().for_each(|p| {
+        //     if (p.is_bot) {
+        //         return;
+        //     }
+        //     let number_of_people_tricked = session
+        //         .turns
+        //         .iter()
+        //         .filter(|t| t.answers.iter().any(|a| a.answerer == p.identity))
+        //         .count();
+
+        //     let did_player_vote_for_a_bot = session
+        //         .current_turn()
+        //         .unwrap()
+        //         .answers
+        //         .iter()
+        //         .any(|a| a.answerer == bot_id);
+
+        //     // session.players.iter_mut().for_each(|p| {
+        //     //     if (did_player_vote_for_a_bot) {
+        //     //         p.score += 100;
+        //     //     }
+        //     //     if (number_of_people_tricked > 0) {
+        //     //         p.score += 8 * number_of_people_tricked as u32;
+        //     //     }
+        //     // });
+        // });
+
+        locked_session.stage = GameStage::Reviewing;
+
+        locked_session.broadcast.clone()
     };
 
     // Send new game state to all clients
     broadcast.broadcast(ServerMessage).await.unwrap();
 }
-
-const ANSWERING_TIMEOUT_SECS: u64 = 10;
-const VOTING_TIMEOUT_SECS: u64 = 10;
 
 async fn handle_client_message(
     identity: ClientIdentity,
@@ -579,12 +638,11 @@ async fn handle_client_message(
                 return;
             }
             if locked_session.creator_identity != identity {
-                // TODO send an error instead of silently exiting
+                // TODO only creator can start game
                 return;
             }
-            let num_players = locked_session.players.len();
             locked_session.stage = GameStage::Answering;
-            locked_session.turns.push(Turn::new(num_players));
+            locked_session.turns.push(Turn::new());
             let async_session = Arc::clone(&session);
             let turn_number = locked_session.turns.len() - 1;
             tokio::task::spawn(async move {
@@ -599,16 +657,19 @@ async fn handle_client_message(
                 // TODO send an error instead of silently exiting
                 return;
             }
-            let player_index = locked_session.player_index(&identity);
-            let turn = locked_session.current_turn_mut();
-            if turn.answers[player_index].is_some() {
+            if (locked_session.has_client_answered(identity)) {
                 // TODO send an error instead of silently exiting
                 return;
             }
-            turn.answers[player_index] = Some(answer);
-            if turn.answers.iter().all(|answer| answer.is_some()) {
+            locked_session
+                .current_turn_mut()
+                .unwrap()
+                .answers
+                .insert(identity, Answer::new(identity, answer));
+
+            if (locked_session.all_answered()) {
                 locked_session.stage = GameStage::Voting;
-                locked_session.current_turn_mut().voting_started_at =
+                locked_session.current_turn_mut().unwrap().voting_started_at =
                     Some(std::time::SystemTime::now());
                 let async_session = Arc::clone(&session);
                 let turn_number = locked_session.turns.len() - 1;
@@ -619,19 +680,29 @@ async fn handle_client_message(
             }
             locked_session.broadcast.clone()
         }
-        ClientResponse::SubmitVote(vote) => {
+        ClientResponse::SubmitVote { answer_id } => {
             let mut session = session.lock().unwrap();
             if !matches!(session.stage, GameStage::Voting) {
                 // TODO send an error instead of silently exiting
                 return;
             }
-            if vote as usize >= session.players.len() {
+            if (session.has_client_voted(identity)) {
                 // TODO send an error instead of silently exiting
                 return;
             }
-            let player_index = session.player_index(&identity);
-            let turn = session.current_turn_mut();
-            turn.votes[player_index] = Some(vote);
+            let answerer = session
+                .current_turn()
+                .unwrap()
+                .get_answer(answer_id)
+                .map(|a| a.answerer);
+
+            if let Some(answerer) = answerer {
+                session
+                    .current_turn_mut()
+                    .unwrap()
+                    .votes
+                    .insert(identity, answerer);
+            }
             session.broadcast.clone()
         }
         ClientResponse::ReadyForNextTurn => {
@@ -640,19 +711,27 @@ async fn handle_client_message(
                 // TODO send an error instead of silently exiting
                 return;
             }
-            let turn_number = locked_session.players.len();
-            let player_index = locked_session.player_index(&identity);
-            let turn = locked_session.current_turn_mut();
-            turn.ready_for_next_turn[player_index] = true;
-            if turn
+
+            if (locked_session.is_ready_for_next_turn(identity)) {
+                // TODO send an error instead of silently exiting
+                return;
+            }
+            locked_session
+                .current_turn_mut()
+                .unwrap()
                 .ready_for_next_turn
-                .iter()
-                .filter(|ready| **ready)
-                .count() as f32
-                > turn.answers.len() as f32 * 0.50
-            {
+                .insert(identity);
+
+            let ready_count = locked_session
+                .current_turn()
+                .unwrap()
+                .ready_for_next_turn
+                .len();
+
+            if (ready_count as f32) / locked_session.player_count() as f32 > 0.5 {
+                let turn_number = locked_session.turns.len();
                 locked_session.stage = GameStage::Answering;
-                locked_session.turns.push(Turn::new(turn_number));
+                locked_session.turns.push(Turn::new());
                 let async_session = Arc::clone(&session);
                 tokio::task::spawn(async move {
                     tokio::time::sleep(tokio::time::Duration::from_secs(ANSWERING_TIMEOUT_SECS))

@@ -175,7 +175,7 @@ async fn handle_server_message(
                 ClientGameState::Answering {
                     started_at,
                     question,
-                    you_voted,
+                    you_answered,
                 },
             ..
         } => {
@@ -198,6 +198,7 @@ Rules:
             })
             .await;
             if let Ok(api_response) = api_response {
+                println!("Successfully called OpenAI {:?}", api_response);
                 let _ = (*write)
                     .send(Message::Text(
                         serde_json::to_string(&ClientResponse::SubmitAnswer(

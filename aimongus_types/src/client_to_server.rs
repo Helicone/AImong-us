@@ -1,3 +1,4 @@
+use crate::server_to_client::SessionId;
 use serde::{Deserialize, Serialize};
 
 use ts_rs::TS;
@@ -8,7 +9,7 @@ use ts_rs::TS;
 pub enum ClientResponse {
     StartGame,
     SubmitAnswer(String),
-    SubmitVote(u8),
+    SubmitVote { answer_id: SessionId },
     ReadyForNextTurn,
 }
 

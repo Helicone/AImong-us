@@ -28,6 +28,7 @@ dependencies = [
 name = "aimongus_types"
 version = "0.1.0"
 dependencies = [
+ "rand",
  "serde",
  "ts-rs",
 ]

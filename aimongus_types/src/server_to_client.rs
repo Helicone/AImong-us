@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use rand::Rng;
 use serde::Deserialize;
 use ts_rs::TS;
 
@@ -8,7 +11,7 @@ pub struct ClientGameStateView {
     pub number_of_players: u8,
     pub current_turn: u8,
     pub game_state: ClientGameState,
-    pub me: u8,
+    pub me: SessionId,
     pub room_code: String,
 }
 
@@ -23,21 +26,17 @@ pub enum ClientGameState {
     Answering {
         started_at: u64,
         question: String,
-        you_voted: bool,
+        you_answered: bool,
     },
     Voting {
         started_at: u64,
         question: String,
-        answers: Vec<Answer>,
-        votes: Vec<Option<u8>>,
+        answers: HashMap<SessionId, Answer>,
     },
     Reviewing {
         started_at: u64,
         question: String,
-        answers: Vec<Answer>,
-        votes: Vec<Option<u8>>,
-        // true if a bot was eliminated
-        eliminated: Option<(u8, bool)>,
+        answers: HashMap<SessionId, Answer>,
         number_of_players_ready: u8,
     },
 }
@@ -47,5 +46,30 @@ pub enum ClientGameState {
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct Answer {
     pub answer: String,
-    pub player_id: u8,
+    pub number_of_votes: u8,
+    pub players_who_voted: Vec<Player>,
+    pub is_me: bool,
+    pub answer_id: SessionId,
+}
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(serde::Serialize, Clone, Deserialize, Debug)]
+pub struct Player {
+    pub random_unique_id: SessionId,
+    pub is_bot: bool,
+    pub score: u32,
+}
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(serde::Serialize, Clone, Copy, Deserialize, Debug, PartialEq, Eq, Hash)]
+pub struct SessionId(pub u32);
+
+impl SessionId {
+    pub fn new() -> Self {
+        let mut rng = rand::thread_rng();
+        let random_u128: u32 = rng.gen();
+        Self(random_u128)
+    }
 }
