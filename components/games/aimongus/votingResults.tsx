@@ -14,26 +14,12 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
     return <div>Game not found</div>;
   }
 
-  const eliminated = game.game_state.content.eliminated;
-  console.log(eliminated);
-
   return (
     <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
       <div>The results are in!</div>
       <div className="flex flex-col col-span-2 gap-5">
         <div>{currentQuestion}</div>
-        <div>
-          {eliminated ? (
-            eliminated.map((player: number | boolean, idx) => (
-              <div key={idx}>
-                {PLAYER_NAMES[idx]} was {player == false ? "not " : ""}{" "}
-                eliminated
-              </div>
-            ))
-          ) : (
-            <p className="text-base">Nobody was eliminated...</p>
-          )}
-        </div>
+        <div></div>
         Number of players ready:{" "}
         {game.game_state.content.number_of_players_ready ?? 0} /{" "}
         {game.number_of_players}
