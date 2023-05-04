@@ -2,9 +2,8 @@
 extern crate rocket;
 
 use aimongus_types::client_to_server::ClientResponse;
-use aimongus_types::server_to_client::{
-    self, ClientGameState, ClientGameStateView, RandomUniqueId,
-};
+use aimongus_types::server_to_client;
+use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView, SessionId};
 use futures::stream::SplitSink;
 use objects::server_to_server::ServerMessage;
 use rand::Rng;
@@ -15,14 +14,14 @@ mod objects;
 use ws::stream::DuplexStream;
 use ws::Message;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
 use std::{env, str};
 
 struct SessionsMap(RwLock<HashMap<RoomCode, Arc<Mutex<Session>>>>);
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ClientIdentity(pub u128);
 
 #[derive(Eq, Hash, PartialEq, Clone)]
@@ -30,10 +29,6 @@ struct RoomCode([u8; 4]);
 
 const ANSWERING_TIMEOUT_SECS: u64 = 60;
 const VOTING_TIMEOUT_SECS: u64 = 60;
-
-fn newRandomUniqueId() -> RandomUniqueId {
-    rand::thread_rng().gen()
-}
 
 impl std::fmt::Display for RoomCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -85,24 +80,14 @@ impl<'v> rocket::form::FromFormField<'v> for RoomCode {
     }
 }
 
-struct Vote {
-    voter: ClientIdentity,
-    votee: ClientIdentity,
-}
-
-impl Vote {
-    fn new(voter: ClientIdentity, votee: ClientIdentity) -> Self {
-        Self { voter, votee }
-    }
-}
 struct Answer {
     answerer: ClientIdentity,
     answer: String,
-    answer_id: RandomUniqueId,
+    answer_id: SessionId,
 }
 impl Answer {
     fn new(answerer: ClientIdentity, answer: String) -> Self {
-        let answer_id = newRandomUniqueId();
+        let answer_id = SessionId::new();
         Self {
             answerer,
             answer,
@@ -116,34 +101,56 @@ struct Turn {
     started_at: std::time::SystemTime,
     voting_started_at: Option<std::time::SystemTime>,
     reviewing_started_at: Option<std::time::SystemTime>,
-    answers: Vec<Answer>,
-    votes: Vec<Vote>,
-    ready_for_next_turn: Vec<ClientIdentity>,
+    answers: HashMap<ClientIdentity, Answer>,
+    votes: HashMap<ClientIdentity, ClientIdentity>,
+    ready_for_next_turn: HashSet<ClientIdentity>,
 }
 
 impl Turn {
-    fn new(num_players: usize) -> Self {
+    fn new() -> Self {
         Self {
             question: "How many TODOs could a TODO do if a TODO could do TODOs?".to_string(),
             started_at: std::time::SystemTime::now(),
             voting_started_at: None,
             reviewing_started_at: None,
-            answers: vec![],
-            votes: vec![],
-            ready_for_next_turn: vec![],
+            answers: HashMap::new(),
+            votes: HashMap::new(),
+            ready_for_next_turn: HashSet::new(),
         }
     }
 
-    fn answers_view(&self, client: ClientIdentity) -> Vec<server_to_client::Answer> {
+    fn answers_view(
+        &self,
+        client: ClientIdentity,
+        players: &Vec<Player>,
+    ) -> HashMap<server_to_client::SessionId, server_to_client::Answer> {
         self.answers
             .iter()
-            .map(|a| aimongus_types::server_to_client::Answer {
-                answer: a.answer.clone(),
-                number_of_votes: self.votes.iter().filter(|v| v.voter == a.answerer).count() as u8,
-                players_who_voted: vec![],
-                is_me: a.answerer == client,
+            .map(|(i, a)| {
+                (
+                    players
+                        .iter()
+                        .find(|p| p.identity == a.answerer)
+                        .unwrap()
+                        .session_id
+                        .clone(),
+                    aimongus_types::server_to_client::Answer {
+                        answer: a.answer.clone(),
+                        number_of_votes: self.votes.iter().filter(|(_, v)| **v == *i).count() as u8,
+                        players_who_voted: vec![],
+                        is_me: a.answerer == client,
+                        answer_id: SessionId::new(),
+                    },
+                )
             })
             .collect()
+    }
+
+    fn get_answer(&self, answer_id: SessionId) -> Option<&Answer> {
+        self.answers
+            .iter()
+            .find(|(_, a)| a.answer_id == answer_id)
+            .map(|(_, a)| a)
     }
 }
 
@@ -162,13 +169,12 @@ struct Session {
     broadcast: async_broadcast::Sender<ServerMessage>,
     turns: Vec<Turn>,
     stage: GameStage,
-    aikey: RandomUniqueId,
+    aikey: SessionId,
 }
-
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Player {
     // Random id that is only unique within this session for this user
-    random_unique_id: RandomUniqueId,
+    session_id: SessionId,
     identity: ClientIdentity,
     score: u32,
     is_bot: bool,
@@ -177,7 +183,7 @@ struct Player {
 impl Player {
     fn new(identity: ClientIdentity, is_bot: bool) -> Self {
         Player {
-            random_unique_id: newRandomUniqueId(),
+            session_id: SessionId::new(),
             identity: identity,
             score: 0,
             is_bot,
@@ -188,7 +194,7 @@ impl Player {
 impl From<Player> for server_to_client::Player {
     fn from(player: Player) -> Self {
         Self {
-            random_unique_id: player.random_unique_id,
+            random_unique_id: player.session_id,
             score: player.score,
             is_bot: player.is_bot,
         }
@@ -198,30 +204,6 @@ impl From<Player> for server_to_client::Player {
 impl Session {
     fn player_count(&self) -> usize {
         self.players.len()
-    }
-
-    fn get_random_unique_id(&self, client_identity: ClientIdentity) -> Option<RandomUniqueId> {
-        self.players
-            .iter()
-            .find(|p| p.identity == client_identity)
-            .map(|p| p.random_unique_id)
-    }
-
-    fn get_player_from_random_unique_id(
-        &self,
-        random_unique_id: RandomUniqueId,
-    ) -> Option<&Player> {
-        self.players
-            .iter()
-            .find(|p| p.random_unique_id == random_unique_id)
-    }
-
-    fn get_players_answer(&self, random_unique_id: RandomUniqueId) -> Option<&Answer> {
-        self.current_turn()
-            .unwrap()
-            .answers
-            .iter()
-            .find(|a| a.answer_id == random_unique_id)
     }
 
     fn all_answered(&self) -> bool {
@@ -234,24 +216,21 @@ impl Session {
         self.current_turn()
             .unwrap()
             .answers
-            .iter()
-            .any(|a| a.answerer == client_identity)
+            .contains_key(&client_identity)
     }
 
     fn has_client_voted(&self, client_identity: ClientIdentity) -> bool {
         self.current_turn()
             .unwrap()
             .votes
-            .iter()
-            .any(|v| v.voter == client_identity)
+            .contains_key(&client_identity)
     }
 
     fn is_ready_for_next_turn(&self, client_identity: ClientIdentity) -> bool {
         self.current_turn()
             .unwrap()
             .ready_for_next_turn
-            .iter()
-            .any(|i| *i == client_identity)
+            .contains(&client_identity)
     }
 
     fn get_ai_players(&self) -> Vec<ClientIdentity> {
@@ -275,7 +254,7 @@ impl Session {
                 broadcast: sender,
                 turns: vec![],
                 stage: GameStage::NotStarted,
-                aikey: newRandomUniqueId(),
+                aikey: SessionId::new(),
             },
             receiver,
         )
@@ -318,7 +297,7 @@ impl Session {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_millis() as u64,
-                you_answered: turn.answers.iter().any(|a| a.answerer == identity),
+                you_answered: turn.answers.contains_key(&identity),
             },
             (GameStage::Voting, Some(turn)) => ClientGameState::Voting {
                 question: turn.question.clone(),
@@ -328,7 +307,7 @@ impl Session {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_millis() as u64,
-                answers: turn.answers_view(identity),
+                answers: turn.answers_view(identity, &self.players),
             },
             (GameStage::Reviewing, Some(turn)) => ClientGameState::Reviewing {
                 question: turn.question.clone(),
@@ -338,7 +317,7 @@ impl Session {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_millis() as u64,
-                answers: turn.answers_view(identity),
+                answers: turn.answers_view(identity, &self.players),
                 number_of_players_ready: turn.ready_for_next_turn.len() as u8,
             },
             (GameStage::GameOver, _) => todo!(),
@@ -351,7 +330,7 @@ impl Session {
             number_of_players: self.non_bot_players().len() as u8,
             game_state: self.get_inner_game_state_view(identity),
             current_turn: self.turns.len() as u8,
-            me: self.player(&identity).unwrap().random_unique_id,
+            me: self.player(&identity).unwrap().session_id.clone(),
             room_code: self.room_code.to_string(),
         }
     }
@@ -369,6 +348,13 @@ impl Session {
             .iter()
             .filter(|p| p.identity == *identity)
             .next()
+    }
+
+    fn get_player_mut(&mut self, identity: &ClientIdentity) -> &mut Player {
+        self.players
+            .iter_mut()
+            .find(|p| p.identity == *identity)
+            .expect("client identity missing from players")
     }
 }
 
@@ -401,19 +387,19 @@ fn create_room(
 ) -> ws::Channel<'static> {
     let room_code = RoomCode::new();
     let (session, receiver) = Session::new_with_creator(identity, &room_code);
-    println!("New session created with AI code: {}", session.aikey);
+    // println!("New session created with AI code: {}", session.aikey);
 
     // Spawn bot
-    // let url = env::var("AIGENT_BASE_URL").unwrap();
-    // let client = reqwest::Client::new();
-    // let params = [
-    //     ("room_id", format!("{}", session.room_code)),
-    //     ("aicode", format!("{}", session.aikey)),
-    // ];
-    // tokio::task::spawn(async move {
-    //     let response = client.get(url).query(&params).send().await;
-    //     println!("got response: {:?}", response);
-    // });
+    let url = env::var("AIGENT_BASE_URL").unwrap();
+    let client = reqwest::Client::new();
+    let params = [
+        ("room_id", format!("{}", session.room_code)),
+        ("aicode", format!("{}", session.aikey.0)),
+    ];
+    tokio::task::spawn(async move {
+        let response = client.get(url).query(&params).send().await;
+        println!("got response: {:?}", response);
+    });
 
     let session = Arc::new(Mutex::new(session));
     sessions
@@ -431,7 +417,7 @@ fn create_room(
 fn join_room(
     identity: ClientIdentity,
     room: RoomCode,
-    aikey: Option<ClientIdentity>,
+    aikey: Option<u32>,
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
 ) -> Result<ws::Channel<'static>, BadRequest<String>> {
@@ -441,10 +427,9 @@ fn join_room(
         let receiver;
         {
             let mut session = session.lock().unwrap();
-            let is_ai = match aikey {
-                Some(key) => key.0 == session.aikey,
-                None => false,
-            };
+
+            let is_ai = aikey.map(|key| key == session.aikey.0).unwrap_or(false);
+
             println!("adding player, is_ai={}", is_ai);
             println!("current players: {:#?}", session.players);
             session.add_player(identity, is_ai);
@@ -579,52 +564,59 @@ async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
 async fn end_voting(session: Arc<Mutex<Session>>, turn_size: usize) {
     println!("ending voting");
     let broadcast = {
-        let mut session = session.lock().unwrap();
+        let mut locked_session = session.lock().unwrap();
 
-        if !matches!(session.stage, GameStage::Voting) {
+        if !matches!(locked_session.stage, GameStage::Voting) {
             // TODO handle this better
             return;
         }
-        if session.turns.len() - 1 > turn_size {
+        if locked_session.turns.len() - 1 > turn_size {
             // that turn already finished
             return;
         }
         {
-            let turn = session.current_turn_mut().unwrap();
+            let turn = locked_session.current_turn_mut().unwrap();
             turn.reviewing_started_at = Some(std::time::SystemTime::now());
         }
 
-        let bot_id = session.players.iter().find(|p| p.is_bot).unwrap().identity;
-        session.players.iter().for_each(|p| {
-            if (p.is_bot) {
-                return;
-            }
-            let number_of_people_tricked = session
-                .turns
-                .iter()
-                .filter(|t| t.answers.iter().any(|a| a.answerer == p.identity))
-                .count();
+        // {
+        //     for a in answers {
+        //         let player: &mut Player = locked_session.get_player_using_id_mut(a.0);
+        //         player.score = player.score + 1;
+        //     }
+        // }
 
-            let did_player_vote_for_a_bot = session
-                .current_turn()
-                .unwrap()
-                .answers
-                .iter()
-                .any(|a| a.answerer == bot_id);
+        // let bot_id = session.players.iter().find(|p| p.is_bot).unwrap().identity;
+        // session.players.iter().for_each(|p| {
+        //     if (p.is_bot) {
+        //         return;
+        //     }
+        //     let number_of_people_tricked = session
+        //         .turns
+        //         .iter()
+        //         .filter(|t| t.answers.iter().any(|a| a.answerer == p.identity))
+        //         .count();
 
-            // session.players.iter_mut().for_each(|p| {
-            //     if (did_player_vote_for_a_bot) {
-            //         p.score += 100;
-            //     }
-            //     if (number_of_people_tricked > 0) {
-            //         p.score += 8 * number_of_people_tricked as u32;
-            //     }
-            // });
-        });
+        //     let did_player_vote_for_a_bot = session
+        //         .current_turn()
+        //         .unwrap()
+        //         .answers
+        //         .iter()
+        //         .any(|a| a.answerer == bot_id);
 
-        session.stage = GameStage::Reviewing;
+        //     // session.players.iter_mut().for_each(|p| {
+        //     //     if (did_player_vote_for_a_bot) {
+        //     //         p.score += 100;
+        //     //     }
+        //     //     if (number_of_people_tricked > 0) {
+        //     //         p.score += 8 * number_of_people_tricked as u32;
+        //     //     }
+        //     // });
+        // });
 
-        session.broadcast.clone()
+        locked_session.stage = GameStage::Reviewing;
+
+        locked_session.broadcast.clone()
     };
 
     // Send new game state to all clients
@@ -649,9 +641,8 @@ async fn handle_client_message(
                 // TODO only creator can start game
                 return;
             }
-            let num_players = locked_session.players.len();
             locked_session.stage = GameStage::Answering;
-            locked_session.turns.push(Turn::new(num_players));
+            locked_session.turns.push(Turn::new());
             let async_session = Arc::clone(&session);
             let turn_number = locked_session.turns.len() - 1;
             tokio::task::spawn(async move {
@@ -674,7 +665,7 @@ async fn handle_client_message(
                 .current_turn_mut()
                 .unwrap()
                 .answers
-                .push(Answer::new(identity, answer));
+                .insert(identity, Answer::new(identity, answer));
 
             if (locked_session.all_answered()) {
                 locked_session.stage = GameStage::Voting;
@@ -699,14 +690,18 @@ async fn handle_client_message(
                 // TODO send an error instead of silently exiting
                 return;
             }
-            let votee = session.get_players_answer(answer_id).map(|a| a.answerer);
+            let answerer = session
+                .current_turn()
+                .unwrap()
+                .get_answer(answer_id)
+                .map(|a| a.answerer);
 
-            if let Some(votee) = votee {
+            if let Some(answerer) = answerer {
                 session
                     .current_turn_mut()
                     .unwrap()
                     .votes
-                    .push(Vote::new(identity, votee));
+                    .insert(identity, answerer);
             }
             session.broadcast.clone()
         }
@@ -725,7 +720,7 @@ async fn handle_client_message(
                 .current_turn_mut()
                 .unwrap()
                 .ready_for_next_turn
-                .push(identity);
+                .insert(identity);
 
             let ready_count = locked_session
                 .current_turn()
@@ -736,7 +731,7 @@ async fn handle_client_message(
             if (ready_count as f32) / locked_session.player_count() as f32 > 0.5 {
                 let turn_number = locked_session.turns.len();
                 locked_session.stage = GameStage::Answering;
-                locked_session.turns.push(Turn::new(turn_number));
+                locked_session.turns.push(Turn::new());
                 let async_session = Arc::clone(&session);
                 tokio::task::spawn(async move {
                     tokio::time::sleep(tokio::time::Duration::from_secs(ANSWERING_TIMEOUT_SECS))

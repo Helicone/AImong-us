@@ -1,5 +1,6 @@
-use crate::server_to_client::RandomUniqueId;
+use crate::server_to_client::SessionId;
 use serde::{Deserialize, Serialize};
+
 use ts_rs::TS;
 
 #[derive(TS)]
@@ -8,7 +9,7 @@ use ts_rs::TS;
 pub enum ClientResponse {
     StartGame,
     SubmitAnswer(String),
-    SubmitVote { answer_id: RandomUniqueId },
+    SubmitVote { answer_id: SessionId },
     ReadyForNextTurn,
 }
 

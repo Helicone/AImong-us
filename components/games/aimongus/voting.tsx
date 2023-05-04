@@ -12,7 +12,7 @@ interface AnswerProps {
 function Answer(props: AnswerProps) {
   const { answer, onClick, room_code } = props;
 
-  const voteArray = Array(voteCount).fill(0);
+  // const voteArray = Array(voteCount).fill(0);
   // const avatar = getAvatar(props.answer.player_id, props.room_code);
 
   return (
@@ -68,22 +68,26 @@ export default function Voting(props: GameStateProps<"Voting">) {
       <div className="flex flex-col col-span-2 gap-5">
         <div>{currentQuestion}</div>
         <div className="flex flex-col max-w-md gap-5">
-          {game.game_state.content.answers.map((answer, i) => (
-            <Answer
-              answer={answer}
-              onClick={() => {
-                if (answer.player_id !== game.me) {
-                  sendMessage({
-                    SubmitVote: answer.player_id,
-                  });
-                } else {
-                  console.log("You can't vote for yourself!");
-                }
-              }}
-              room_code={game.room_code}
-              key={i}
-            />
-          ))}
+          {Object.entries(game.game_state.content.answers).map(
+            ([sessionId, answer]) => (
+              <Answer
+                answer={answer}
+                onClick={() => {
+                  if (answer.is_me) {
+                    sendMessage({
+                      SubmitVote: {
+                        answer_id: answer.answer_id,
+                      },
+                    });
+                  } else {
+                    console.log("You can't vote for yourself!");
+                  }
+                }}
+                room_code={game.room_code}
+                key={answer.answer_id}
+              />
+            )
+          )}
         </div>
       </div>
       <div>
