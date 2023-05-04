@@ -175,7 +175,7 @@ async fn handle_server_message(
                 ClientGameState::Answering {
                     started_at,
                     question,
-                    you_voted,
+                    you_answered,
                 },
             ..
         } => {
