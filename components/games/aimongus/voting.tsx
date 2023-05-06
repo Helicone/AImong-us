@@ -21,12 +21,12 @@ function Answer(props: AnswerProps) {
         className={`flex flex-col items-center justify-center w-full ${
           answer.is_me ? "bg-gray-200" : "bg-white"
         } p-5 rounded-xl shadow-md`}
-        onClick={props.onClick}
+        onClick={onClick}
         disabled={answer.is_me}
       >
         <div className="flex flex-row justify-between w-full items-center">
           <div className="flex flex-col items-start">
-            <div className="text-2xl">{props.answer.answer}</div>
+            <div className="text-xl">{props.answer.answer}</div>
             <div className="text-sm">
               {/* {avatar.name} */}
               {answer.is_me ? " (You)" : ""}
@@ -35,18 +35,16 @@ function Answer(props: AnswerProps) {
           {/* <div className="text-xl">{avatar.emoji}</div> */}
         </div>
       </button>
-      <div className="absolute top-0 flex flex-row gap-2">
+      <div className="absolute -bottom-5 right-0 flex flex-row gap-2">
         {}
         {Array(answer.number_of_votes)
           .fill(0)
           .map((vote, i) => (
             <div
-              className={`flex flex-row items-center justify-center w-full bg-green-200 p-1 rounded-xl shadow-md`}
+              className={`flex flex-row items-center justify-center w-full bg-gray-500 p-1 rounded-xl shadow-md`}
               key={i}
             >
-              <div className="text-lg h-10">
-                {/* {getAvatar(vote.player, props.room_code).emoji} */}
-              </div>
+              <div className="text-xl h-7">🪓</div>
             </div>
           ))}
       </div>
@@ -65,15 +63,19 @@ export default function Voting(props: GameStateProps<"Voting">) {
 
   return (
     <div className="flex flex-col gap-20">
-      <div className="flex flex-col col-span-2 gap-5">
-        <div>{currentQuestion}</div>
-        <div className="flex flex-col max-w-md gap-5">
+      <div className="flex flex-col col-span-2 gap-5 items-center">
+        <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
+          <div className="max-w-lg bg-white  p-5 rounded-lg bg-">
+            {currentQuestion}
+          </div>
+        </div>
+        <div className="flex flex-col max-w-md gap-10">
           {Object.entries(game.game_state.content.answers).map(
             ([sessionId, answer]) => (
               <Answer
                 answer={answer}
                 onClick={() => {
-                  if (answer.is_me) {
+                  if (!answer.is_me) {
                     sendMessage({
                       SubmitVote: {
                         answer_id: answer.answer_id,

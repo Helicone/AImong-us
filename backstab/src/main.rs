@@ -28,7 +28,7 @@ pub struct ClientIdentity(pub u128);
 struct RoomCode([u8; 4]);
 
 const ANSWERING_TIMEOUT_SECS: u64 = 60;
-const VOTING_TIMEOUT_SECS: u64 = 60;
+const VOTING_TIMEOUT_SECS: u64 = 6000;
 
 impl std::fmt::Display for RoomCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -80,6 +80,7 @@ impl<'v> rocket::form::FromFormField<'v> for RoomCode {
     }
 }
 
+#[derive(Clone, Debug)]
 struct Answer {
     answerer: ClientIdentity,
     answer: String,
@@ -96,6 +97,7 @@ impl Answer {
     }
 }
 
+#[derive(Clone, Debug)]
 struct Turn {
     question: String,
     started_at: std::time::SystemTime,
@@ -139,7 +141,7 @@ impl Turn {
                         number_of_votes: self.votes.iter().filter(|(_, v)| **v == *i).count() as u8,
                         players_who_voted: vec![],
                         is_me: a.answerer == client,
-                        answer_id: SessionId::new(),
+                        answer_id: a.answer_id,
                     },
                 )
             })
@@ -686,10 +688,7 @@ async fn handle_client_message(
                 // TODO send an error instead of silently exiting
                 return;
             }
-            if (session.has_client_voted(identity)) {
-                // TODO send an error instead of silently exiting
-                return;
-            }
+
             let answerer = session
                 .current_turn()
                 .unwrap()
@@ -702,8 +701,12 @@ async fn handle_client_message(
                     .unwrap()
                     .votes
                     .insert(identity, answerer);
+                session.broadcast.clone()
+            } else {
+                // TODO send an error instead of silently exiting
+                println!("answerer not found");
+                return;
             }
-            session.broadcast.clone()
         }
         ClientResponse::ReadyForNextTurn => {
             let mut locked_session = session.lock().unwrap();

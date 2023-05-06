@@ -8,6 +8,8 @@ import {
 import { GameStateProps } from "../../../pages/game";
 import { Timer } from "./timer";
 
+const MAX_LENGTH_ANSWER = 1200;
+
 export default function QuestionAnswering(props: GameStateProps<"Answering">) {
   const { game, sendMessage } = props;
 
@@ -21,59 +23,51 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
 
   return (
     <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
-      <div>
-        {" "}
-        Question {game.current_turn}/{NUM_QUESTIONS_PER_GAME}
-      </div>
-      <div className="flex flex-row justify-between col-span-2">
-        <div className="flex flex-row">
-          <p className="p-2">
-            {game.number_of_players} / {NUM_PLAYERS} Players Joined
-          </p>
-        </div>
-      </div>
-      <div className="flex flex-col col-span-2">
-        <div>
-          <label
-            htmlFor="answer"
-            className="block text-sm font-medium leading-6 text-gray-900"
-          >
-            {currentQuestion}
-          </label>
+      <div className="flex flex-col col-span-2 gap-12">
+        <div className="flex flex-col col-span-2 gap-2">
+          <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
+            <div className="max-w-lg bg-white  p-5 rounded-lg bg-">
+              {currentQuestion}
+            </div>
+          </div>
           <div className="mt-2">
             <textarea
-              rows={4}
+              rows={5}
               name="answer"
               id="answer"
-              className="block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-0 sm:py-1.5 sm:text-md sm:leading-6"
-              defaultValue={"..."}
+              className="pl-3 resize-none block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-0 sm:py-1.5 sm:text-md sm:leading-6"
+              placeholder="Answer"
               value={answer}
               onChange={(e) => {
-                if (e.target.value.length > 160) return;
+                if (e.target.value.length > MAX_LENGTH_ANSWER) return;
                 setAnswer(e.target.value);
               }}
             />
-            <p className="mt-2 text-sm text-gray-500">{answer.length}/160</p>
+            <p className="mt-2 text-sm text-gray-500">
+              {answer.length}/{MAX_LENGTH_ANSWER}
+            </p>
           </div>
         </div>
-        <button
-          className="bg-gray-600 text-white p-2 w-full hover:opacity-90"
-          onClick={() => {
-            sendMessage({
-              SubmitAnswer: answer,
-            });
-          }}
-        >
-          Submit Answer
-        </button>
-      </div>
-      <div>
-        <Timer
-          totalTime={TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000}
-          timeStarted={new Date(
-            Number(game.game_state.content.started_at)
-          ).getTime()}
-        />
+        <div className="flex flex-col gap-10">
+          <button
+            className="bg-gray-600 text-white p-2 w-full hover:opacity-90"
+            onClick={() => {
+              sendMessage({
+                SubmitAnswer: answer,
+              });
+            }}
+          >
+            Submit Answer
+          </button>
+          <div>
+            <Timer
+              totalTime={TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000}
+              timeStarted={new Date(
+                Number(game.game_state.content.started_at)
+              ).getTime()}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
