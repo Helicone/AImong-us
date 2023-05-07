@@ -330,6 +330,7 @@ impl Session {
     fn get_game_state_view(&self, identity: ClientIdentity) -> ClientGameStateView {
         ClientGameStateView {
             number_of_players: self.non_bot_players().len() as u8,
+            players: self.players.clone().iter().map(|p| server_to_client::Player::from(p.clone())).collect(),
             game_state: self.get_inner_game_state_view(identity),
             current_turn: self.turns.len() as u8,
             me: self.player(&identity).unwrap().session_id.clone(),

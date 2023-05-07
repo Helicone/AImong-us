@@ -9,6 +9,7 @@ use ts_rs::TS;
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct ClientGameStateView {
     pub number_of_players: u8,
+    pub players: Vec<Player>,
     pub current_turn: u8,
     pub game_state: ClientGameState,
     pub me: SessionId,
