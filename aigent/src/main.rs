@@ -132,6 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     base_url.push_str(&room_code);
     base_url.push_str("&aikey=");
     base_url.push_str(&ai_code);
+    base_url.push_str("&username=jeff");
     println!("{}", base_url);
     let url: Url = url::Url::parse(&base_url).unwrap();
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect");

@@ -59,8 +59,8 @@ pub struct Answer {
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct Player {
     pub random_unique_id: SessionId,
-    pub is_bot: bool,
     pub score: u32,
+    pub username: String
 }
 
 #[derive(TS)]

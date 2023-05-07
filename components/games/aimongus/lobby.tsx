@@ -3,6 +3,7 @@ import { useState } from "react";
 
 export default function Lobby() {
   const [roomId, setRoomId] = useState("");
+  const [username, setUsername] = useState("");
   const router = useRouter();
 
   return (
@@ -24,17 +25,26 @@ export default function Lobby() {
               className="bg-purple-500 text-white px-4 py-2 rounded-md ml-2 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
               onClick={() => {
                 console.log("play AImong Us");
-                router.push("/game?room_id=" + roomId);
+                router.push("/game?room_id=" + roomId+"&username="+username);
               }}
             >
               Join Game
             </button>
           </div>
+          <div>
+          <input
+              type="text"
+              placeholder="Username"
+              className="border-2 border-gray-800 bg-gray-100 text-gray-800 p-2 w-full rounded-md focus:outline-none focus:border-green-500"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
           <button
             className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-800"
             onClick={() => {
               console.log("play AImong Us");
-              router.push("/game?get_new_game=true");
+              router.push("/game?get_new_game=true&username="+username);
             }}
           >
             + Create Game

@@ -184,16 +184,18 @@ struct Player {
     identity: ClientIdentity,
     score: u32,
     is_bot: bool,
+    username: String
     last_message_sent: u128,
 }
 
 impl Player {
-    fn new(identity: ClientIdentity, is_bot: bool) -> Self {
+    fn new(identity: ClientIdentity, is_bot: bool, username: String) -> Self {
         Player {
             session_id: SessionId::new(),
             identity: identity,
             score: 0,
             is_bot,
+            username
             last_message_sent: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -207,7 +209,7 @@ impl From<Player> for server_to_client::Player {
         Self {
             random_unique_id: player.session_id,
             score: player.score,
-            is_bot: player.is_bot,
+            username: player.username
         }
     }
 }
@@ -255,13 +257,14 @@ impl Session {
     fn new_with_creator(
         creator_identity: ClientIdentity,
         room_code: &RoomCode,
+        creator_username: String
     ) -> (Self, async_broadcast::Receiver<ServerMessage>) {
         let (sender, receiver) = async_broadcast::broadcast(1);
         (
             Self {
                 room_code: room_code.clone(),
                 creator_identity,
-                players: vec![Player::new(creator_identity, false)],
+                players: vec![Player::new(creator_identity, false, creator_username)],
                 broadcast: sender,
                 turns: vec![],
                 stage: GameStage::NotStarted,
@@ -272,7 +275,7 @@ impl Session {
         )
     }
 
-    fn add_player(&mut self, identity: ClientIdentity, is_ai: bool) {
+    fn add_player(&mut self, identity: ClientIdentity, is_ai: bool, username: String) {
         if self
             .players
             .iter()
@@ -280,7 +283,7 @@ impl Session {
             .next()
             .is_none()
         {
-            let player = Player::new(identity, is_ai);
+            let player = Player::new(identity, is_ai, username);
             self.players.push(player);
         }
     }
@@ -398,14 +401,15 @@ impl<'v> rocket::form::FromFormField<'v> for ClientIdentity {
 
 /// Creates a new session and sends the random code to the client.
 /// Once created, client subscribes to the session's websocket.
-#[get("/create-room?<identity>")]
+#[get("/create-room?<identity>&<username>")]
 fn create_room(
     identity: ClientIdentity,
+    username: String,
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
 ) -> ws::Channel<'static> {
     let room_code = RoomCode::new();
-    let (session, receiver) = Session::new_with_creator(identity, &room_code);
+    let (session, receiver) = Session::new_with_creator(identity, &room_code, username);
     // println!("New session created with AI code: {}", session.aikey);
 
     // Spawn bot
@@ -432,10 +436,11 @@ fn create_room(
 
 /// Joins an existing session using its random code.
 /// Once joined, client subscribes to the session's websocket.
-#[get("/join-room?<identity>&<room>&<aikey>")]
+#[get("/join-room?<identity>&<room>&<username>&<aikey>")]
 fn join_room(
     identity: ClientIdentity,
     room: RoomCode,
+    username: String,
     aikey: Option<u32>,
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
@@ -451,7 +456,7 @@ fn join_room(
 
             println!("adding player, is_ai={}", is_ai);
             println!("current players: {:#?}", session.players);
-            session.add_player(identity, is_ai);
+            session.add_player(identity, is_ai, username);
             receiver = session.broadcast.new_receiver();
         }
         Ok(manage_game_socket(
