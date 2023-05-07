@@ -11,6 +11,7 @@ pub enum ClientResponse {
     SubmitAnswer(String),
     SubmitVote { answer_id: SessionId },
     ReadyForNextTurn,
+    SendChat(String)
 }
 
 #[cfg(feature = "server")]

@@ -2,7 +2,7 @@
 extern crate rocket;
 
 use aimongus_types::client_to_server::ClientResponse;
-use aimongus_types::server_to_client;
+use aimongus_types::server_to_client::{self, ChatMessage};
 use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView, SessionId};
 use futures::stream::SplitSink;
 use objects::server_to_server::ServerMessage;
@@ -17,6 +17,7 @@ use ws::Message;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{env, str};
 
 struct SessionsMap(RwLock<HashMap<RoomCode, Arc<Mutex<Session>>>>);
@@ -29,6 +30,7 @@ struct RoomCode([u8; 4]);
 
 const ANSWERING_TIMEOUT_SECS: u64 = 60;
 const VOTING_TIMEOUT_SECS: u64 = 6000;
+const MS_BETWEEN_CHAT_MESSAGES: u128 = 500;
 
 impl std::fmt::Display for RoomCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -172,7 +174,9 @@ struct Session {
     turns: Vec<Turn>,
     stage: GameStage,
     aikey: SessionId,
+    messages: Vec<ChatMessage>,
 }
+
 #[derive(Clone, Debug)]
 struct Player {
     // Random id that is only unique within this session for this user
@@ -181,6 +185,7 @@ struct Player {
     score: u32,
     is_bot: bool,
     username: String
+    last_message_sent: u128,
 }
 
 impl Player {
@@ -191,6 +196,10 @@ impl Player {
             score: 0,
             is_bot,
             username
+            last_message_sent: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis(),
         }
     }
 }
@@ -260,6 +269,7 @@ impl Session {
                 turns: vec![],
                 stage: GameStage::NotStarted,
                 aikey: SessionId::new(),
+                messages: vec![],
             },
             receiver,
         )
@@ -333,10 +343,17 @@ impl Session {
     fn get_game_state_view(&self, identity: ClientIdentity) -> ClientGameStateView {
         ClientGameStateView {
             number_of_players: self.non_bot_players().len() as u8,
+            players: self
+                .players
+                .clone()
+                .iter()
+                .map(|p| server_to_client::Player::from(p.clone()))
+                .collect(),
             game_state: self.get_inner_game_state_view(identity),
             current_turn: self.turns.len() as u8,
             me: self.player(&identity).unwrap().session_id.clone(),
             room_code: self.room_code.to_string(),
+            messages: self.messages.clone(),
         }
     }
 
@@ -747,6 +764,36 @@ async fn handle_client_message(
                     end_answering(async_session, turn_number).await;
                 });
             }
+            locked_session.broadcast.clone()
+        }
+        ClientResponse::SendChat(chat_message) => {
+            let mut locked_session = session.lock().unwrap();
+            let player = locked_session.get_player(identity);
+            if player.is_none() {
+                // TODO send an error instead of silently exiting
+                return;
+            }
+
+            let session_id = player.unwrap().session_id.clone();
+            let last_sent = player.unwrap().last_message_sent;
+
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis();
+
+            if last_sent + MS_BETWEEN_CHAT_MESSAGES > now {
+                return;
+            }
+
+            locked_session.messages.push(ChatMessage {
+                sender: session_id,
+                time_sent: now,
+                message: chat_message,
+            });
+            let mut player = locked_session.get_player_mut(&identity);
+            player.last_message_sent = now;
+
             locked_session.broadcast.clone()
         }
     };

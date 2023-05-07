@@ -44,7 +44,7 @@ export function MainWrapper(props: MainWrapperProps) {
           <div>
             Turn {game?.current_turn} / {NUM_QUESTIONS_PER_GAME}
           </div>
-          <div></div>
+          <div>{game.game_state.state}</div>
           <div>{game?.number_of_players} players</div>
         </h2>
       )}

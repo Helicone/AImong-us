@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 
 use rand::Rng;
 use serde::Deserialize;
@@ -9,10 +9,12 @@ use ts_rs::TS;
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct ClientGameStateView {
     pub number_of_players: u8,
+    pub players: Vec<Player>,
     pub current_turn: u8,
     pub game_state: ClientGameState,
     pub me: SessionId,
     pub room_code: String,
+    pub messages: Vec<ChatMessage>
 }
 
 #[derive(TS)]
@@ -72,4 +74,14 @@ impl SessionId {
         let random_u128: u32 = rng.gen();
         Self(random_u128)
     }
+}
+
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(serde::Serialize, Clone, Deserialize, Debug, PartialEq, Eq, Hash)]
+pub struct ChatMessage {
+    pub sender: SessionId,
+    pub time_sent: u128,
+    pub message: String
 }
