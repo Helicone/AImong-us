@@ -31,6 +31,8 @@ struct RoomCode([u8; 4]);
 const ANSWERING_TIMEOUT_SECS: u32 = 60;
 const VOTING_TIMEOUT_SECS: u32 = 10;
 const MS_BETWEEN_CHAT_MESSAGES: u128 = 500;
+const POINTS_FOR_CORRECT_GUESS: u32 = 1000;
+const POINTS_FOR_NOT_BEING_GUESSED: u32 = 200;
 
 impl std::fmt::Display for RoomCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -88,6 +90,7 @@ struct Answer {
     answer: String,
     answer_id: SessionId,
 }
+
 impl Answer {
     fn new(answerer: ClientIdentity, answer: String) -> Self {
         let answer_id = SessionId::new();
@@ -95,6 +98,22 @@ impl Answer {
             answerer,
             answer,
             answer_id,
+        }
+    }
+
+    fn to_view(&self, session: &Session, identity: ClientIdentity) -> server_to_client::Answer {
+        server_to_client::Answer {
+            answer: self.answer.clone(),
+            number_of_votes: session
+                .current_turn()
+                .as_ref()
+                .unwrap()
+                .votes
+                .iter()
+                .filter(|(_, v)| **v == self.answerer)
+                .count() as u8,
+            is_me: self.answerer == identity,
+            answer_id: self.answer_id,
         }
     }
 }
@@ -106,6 +125,7 @@ struct Turn {
     voting_started_at: Option<std::time::SystemTime>,
     reviewing_started_at: Option<std::time::SystemTime>,
     answers: HashMap<ClientIdentity, Answer>,
+    // Votee -> Answerer
     votes: HashMap<ClientIdentity, ClientIdentity>,
     ready_for_next_turn: HashSet<ClientIdentity>,
 }
@@ -143,7 +163,6 @@ impl Turn {
                         number_of_votes: self.votes.iter().filter(|(_, v)| **v == *i).count() as u8,
                         is_me: a.answerer == client,
                         answer_id: a.answer_id,
-                        voting_result: None,
                     },
                 )
             })
@@ -276,12 +295,8 @@ impl Session {
             .contains(&client_identity)
     }
 
-    fn get_ai_players(&self) -> Vec<ClientIdentity> {
-        self.players
-            .iter()
-            .filter(|p| p.is_bot)
-            .map(|p| p.identity)
-            .collect()
+    fn get_ai_players(&self) -> Vec<&Player> {
+        self.players.iter().filter(|p| p.is_bot).collect()
     }
 
     fn new_with_creator(
@@ -334,6 +349,69 @@ impl Session {
             .next()
     }
 
+    fn players_who_voted_for_bot(&self) -> Vec<&Player> {
+        self.current_turn()
+            .unwrap()
+            .votes
+            .iter()
+            .filter(|(_, v)| self.get_player(**v).unwrap().is_bot)
+            .filter_map(|(v, _)| self.get_player(*v))
+            .collect()
+    }
+
+    fn votes_view(&self, identity: ClientIdentity) -> Vec<server_to_client::VoteResult> {
+        self.players
+            .iter()
+            .filter_map(
+                |&Player {
+                     identity: player_identity,
+                     session_id,
+                     ..
+                 }|
+                 -> Option<server_to_client::VoteResult> {
+                    let current_turn = self.current_turn()?;
+                    return Some(server_to_client::VoteResult {
+                        answer: current_turn
+                            .answers
+                            .get(&player_identity)?
+                            .clone()
+                            .to_view(&self, identity),
+                        answerer: session_id.clone(),
+                        players_who_voted: current_turn
+                            .votes
+                            .iter()
+                            .filter(|(_, v)| *v == &player_identity)
+                            .filter_map(|(v, _)| self.get_player(*v).map(|p| p.session_id))
+                            .collect(),
+                        points: {
+                            let guessed_the_bot = self
+                                .players_who_voted_for_bot()
+                                .iter()
+                                .any(|p| p.identity == player_identity);
+
+                            let did_someone_vote_for_you = current_turn
+                                .votes
+                                .iter()
+                                .any(|(_, v)| v == &player_identity);
+                            server_to_client::Points {
+                                guessing_the_bot: if guessed_the_bot {
+                                    POINTS_FOR_CORRECT_GUESS
+                                } else {
+                                    0
+                                },
+                                not_thinking_you_are_the_bot: if !did_someone_vote_for_you {
+                                    POINTS_FOR_NOT_BEING_GUESSED
+                                } else {
+                                    0
+                                },
+                            }
+                        },
+                    });
+                },
+            )
+            .collect()
+    }
+
     fn get_inner_game_state_view(&self, identity: ClientIdentity) -> ClientGameState {
         let turn = self.current_turn();
         match (&self.stage, turn) {
@@ -369,8 +447,13 @@ impl Session {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_millis() as u64,
-                answers: turn.answers_view(identity, &self.players),
+                results: self.votes_view(identity),
                 number_of_players_ready: turn.ready_for_next_turn.len() as u8,
+                bot_ids: self
+                    .get_ai_players()
+                    .iter()
+                    .map(|p| p.session_id.clone())
+                    .collect(),
             },
             (GameStage::GameOver, _) => todo!(),
             _ => panic!("Invalid game state"),
@@ -649,41 +732,25 @@ async fn end_voting(session: Arc<Mutex<Session>>, turn_size: usize) {
             let turn = locked_session.current_turn_mut().unwrap();
             turn.reviewing_started_at = Some(std::time::SystemTime::now());
         }
+        let players_who_voted_for_bot = locked_session
+            .players_who_voted_for_bot()
+            .iter()
+            .map(|p| p.identity.clone())
+            .collect::<Vec<_>>();
 
-        // {
-        //     for a in answers {
-        //         let player: &mut Player = locked_session.get_player_using_id_mut(a.0);
-        //         player.score = player.score + 1;
-        //     }
-        // }
+        let turn = locked_session.current_turn().map(|t| t.clone()).unwrap();
+        for player in locked_session.players.iter_mut() {
+            let player_identity = player.identity.clone();
+            let guessed_the_bot = players_who_voted_for_bot.contains(&player_identity);
 
-        // let bot_id = session.players.iter().find(|p| p.is_bot).unwrap().identity;
-        // session.players.iter().for_each(|p| {
-        //     if (p.is_bot) {
-        //         return;
-        //     }
-        //     let number_of_people_tricked = session
-        //         .turns
-        //         .iter()
-        //         .filter(|t| t.answers.iter().any(|a| a.answerer == p.identity))
-        //         .count();
-
-        //     let did_player_vote_for_a_bot = session
-        //         .current_turn()
-        //         .unwrap()
-        //         .answers
-        //         .iter()
-        //         .any(|a| a.answerer == bot_id);
-
-        //     // session.players.iter_mut().for_each(|p| {
-        //     //     if (did_player_vote_for_a_bot) {
-        //     //         p.score += 100;
-        //     //     }
-        //     //     if (number_of_people_tricked > 0) {
-        //     //         p.score += 8 * number_of_people_tricked as u32;
-        //     //     }
-        //     // });
-        // });
+            let did_someone_vote_for_you = turn.votes.iter().any(|(_, v)| v == &player_identity);
+            if !did_someone_vote_for_you {
+                player.score = player.score + POINTS_FOR_NOT_BEING_GUESSED
+            }
+            if guessed_the_bot {
+                player.score = player.score + POINTS_FOR_CORRECT_GUESS
+            }
+        }
 
         locked_session.stage = GameStage::Reviewing;
 

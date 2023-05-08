@@ -76,7 +76,9 @@ export default function Lobby() {
                 placeholder="Username"
                 className="border-2 border-gray-800 bg-gray-100 text-gray-800 p-2 w-full rounded-md focus:outline-none focus:border-green-500"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) =>
+                  e.target.value.length < 10 && setUsername(e.target.value)
+                }
               />
               <button
                 className="text-xl border-2 border-black text-white px-4 py-2 rounded-md hover:bg-gray-900 "

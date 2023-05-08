@@ -1,38 +1,104 @@
-import { useState } from "react";
-import {
-  NUM_PLAYERS,
-  PLAYER_NAMES,
-  TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
-} from "../../../lib/constants";
 import { GameStateProps } from "../../../pages/game";
+import { AnswerCard, AnswerCardResult } from "../../shared/answerCard";
+
+interface AnswerProps {
+  votingResult: GameStateProps<"Reviewing">["game"]["game_state"]["content"]["results"][number];
+}
+
+function BotAnswer(props: AnswerProps) {
+  const { votingResult } = props;
+
+  // const voteArray = Array(voteCount).fill(0);
+  // const avatar = getAvatar(props.answer.player_id, props.room_code);
+
+  return <div className="relative">{votingResult.answer.answer}</div>;
+}
 
 export default function VotingResults(props: GameStateProps<"Reviewing">) {
   const { game, sendMessage } = props;
 
   const currentQuestion = game.game_state.content.question;
+
+  const botResult = game.game_state.content.bot_ids
+    .map((botId) => {
+      const result = game.game_state.content.results.find(
+        (result) => result.answerer === botId
+      );
+      if (!result) {
+        return null;
+      }
+      return result;
+    })
+    .at(0);
+  const playerAnswers = game.game_state.content.results.filter(
+    (result) => result.answerer !== botResult?.answerer
+  );
+
   if (!currentQuestion) {
     return <div>Game not found</div>;
   }
+  if (!botResult) {
+    return <div>Bot result not found</div>;
+  }
+  type Player = GameStateProps<"Voting">["game"]["players"][number];
+  function getPlayer(playerId: number): Player | null {
+    const player = game.players.find(
+      (player) => player.random_unique_id === playerId
+    );
+    if (!player) {
+      return null;
+    }
+    if (player.emoji === "undefined") {
+      return {
+        ...player,
+        emoji: "👤",
+      };
+    }
+    return player;
+  }
+
+  const maxPoints = Math.max(...game.players.map((player) => player.score));
 
   return (
-    <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
-      <div>The results are in!</div>
-      <div className="flex flex-col col-span-2 gap-5">
-        <div>{currentQuestion}</div>
-        <div></div>
-        Number of players ready:{" "}
-        {game.game_state.content.number_of_players_ready ?? 0} /{" "}
-        {game.number_of_players}
-        <div>
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            onClick={() => {
-              sendMessage("ReadyForNextTurn");
-            }}
-          >
-            Ready for next turn
-          </button>
+    <div className="flex flex-col col-span-2 gap-5">
+      <AnswerCardResult
+        answer={botResult.answer}
+        isBot
+        player={getPlayer(botResult.answerer)!}
+        playersWhoVoted={
+          botResult.players_who_voted
+            .map(getPlayer)
+            .filter((player) => player !== null) as Player[]
+        }
+      />
+      <div>{currentQuestion}</div>
+      {playerAnswers.map((result, i) => (
+        <div key={i}>
+          <AnswerCardResult
+            answer={result.answer}
+            player={getPlayer(result.answerer)!}
+            maxPoints={maxPoints}
+            playersWhoVoted={
+              result.players_who_voted
+                .map(getPlayer)
+                .filter((player) => player !== null) as Player[]
+            }
+            points={result.points}
+          />
         </div>
+      ))}
+      Number of players ready:{" "}
+      {game.game_state.content.number_of_players_ready ?? 0} /{" "}
+      {game.number_of_players}
+      <div>
+        <button
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => {
+            sendMessage("ReadyForNextTurn");
+          }}
+        >
+          Ready for next turn
+        </button>
       </div>
     </div>
   );

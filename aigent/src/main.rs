@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     base_url.push_str(&room_code);
     base_url.push_str("&aikey=");
     base_url.push_str(&ai_code);
-    base_url.push_str("&username=jeff");
+    base_url.push_str("&username=bot");
     base_url.push_str("&emoji=🤖");
     println!("{}", base_url);
     let url: Url = url::Url::parse(&base_url).unwrap();
@@ -109,13 +109,7 @@ async fn handle_server_message(
     println!("Received a message: {:?}", message);
     match message {
         ClientGameStateView {
-            game_state:
-                ClientGameState::Answering {
-                    started_at,
-                    question,
-                    you_answered,
-                    allowed_time,
-                },
+            game_state: ClientGameState::Answering { question, .. },
             ..
         } => {
             // println!("Received a message: {:?}", message);

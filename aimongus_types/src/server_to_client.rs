@@ -40,8 +40,9 @@ pub enum ClientGameState {
     Reviewing {
         started_at: u64,
         question: String,
-        answers: HashMap<SessionId, Answer>,
+        results: Vec<VoteResult>,
         number_of_players_ready: u8,
+        bot_ids: Vec<SessionId>,
     },
 }
 
@@ -49,9 +50,8 @@ pub enum ClientGameState {
 #[ts(export)]
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct VoteResult {
-    pub answerer: Player,
-    pub answer_id: SessionId,
-    pub number_of_votes: u8,
+    pub answerer: SessionId,
+    pub answer: Answer,
     pub players_who_voted: Vec<SessionId>,
     pub points: Points,
 }
@@ -59,8 +59,8 @@ pub struct VoteResult {
 #[ts(export)]
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct Points {
-    pub guessing_the_bot: u8,
-    pub not_thinking_you_are_the_bot: u8,
+    pub guessing_the_bot: u32,
+    pub not_thinking_you_are_the_bot: u32,
 }
 
 #[derive(TS)]
@@ -69,7 +69,6 @@ pub struct Points {
 pub struct Answer {
     pub answer: String,
     pub number_of_votes: u8,
-    pub voting_result: Option<VoteResult>,
     pub is_me: bool,
     pub answer_id: SessionId,
 }
