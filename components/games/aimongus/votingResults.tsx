@@ -61,6 +61,11 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
 
   return (
     <div className="flex flex-col col-span-2 gap-5">
+      <div className="text-xl font-semibold font-mono w-full flex flex-col items-center text-center">
+        <div className="max-w-lg bg-white  p-5 rounded-lg bg-">
+          {currentQuestion}
+        </div>
+      </div>
       <AnswerCardResult
         answer={botResult.answer}
         isBot
@@ -71,7 +76,6 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
             .filter((player) => player !== null) as Player[]
         }
       />
-      <div>{currentQuestion}</div>
       {playerAnswers.map((result, i) => (
         <div key={i}>
           <AnswerCardResult
