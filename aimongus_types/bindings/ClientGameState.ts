@@ -2,4 +2,4 @@
 import type { Answer } from "./Answer";
 import type { SessionId } from "./SessionId";
 
-export type ClientGameState = { state: "Lobby", content: { is_host: boolean, } } | { state: "Answering", content: { started_at: bigint, question: string, you_answered: boolean, } } | { state: "Voting", content: { started_at: bigint, question: string, answers: Record<SessionId, Answer>, } } | { state: "Reviewing", content: { started_at: bigint, question: string, answers: Record<SessionId, Answer>, number_of_players_ready: number, } };
+export type ClientGameState = { state: "Lobby", content: { is_host: boolean, } } | { state: "Answering", content: { started_at: bigint, question: string, you_answered: boolean, allowed_time: number, } } | { state: "Voting", content: { started_at: bigint, question: string, answers: Record<SessionId, Answer>, allowed_time: number, } } | { state: "Reviewing", content: { started_at: bigint, question: string, answers: Record<SessionId, Answer>, number_of_players_ready: number, } };

@@ -28,8 +28,8 @@ pub struct ClientIdentity(pub u128);
 #[derive(Eq, Hash, PartialEq, Clone)]
 struct RoomCode([u8; 4]);
 
-const ANSWERING_TIMEOUT_SECS: u64 = 60;
-const VOTING_TIMEOUT_SECS: u64 = 6000;
+const ANSWERING_TIMEOUT_SECS: u32 = 60;
+const VOTING_TIMEOUT_SECS: u32 = 10;
 const MS_BETWEEN_CHAT_MESSAGES: u128 = 500;
 
 impl std::fmt::Display for RoomCode {
@@ -141,9 +141,9 @@ impl Turn {
                     aimongus_types::server_to_client::Answer {
                         answer: a.answer.clone(),
                         number_of_votes: self.votes.iter().filter(|(_, v)| **v == *i).count() as u8,
-                        players_who_voted: vec![],
                         is_me: a.answerer == client,
                         answer_id: a.answer_id,
+                        voting_result: None,
                     },
                 )
             })
@@ -348,6 +348,7 @@ impl Session {
                     .unwrap()
                     .as_millis() as u64,
                 you_answered: turn.answers.contains_key(&identity),
+                allowed_time: ANSWERING_TIMEOUT_SECS,
             },
             (GameStage::Voting, Some(turn)) => ClientGameState::Voting {
                 question: turn.question.clone(),
@@ -358,6 +359,7 @@ impl Session {
                     .unwrap()
                     .as_millis() as u64,
                 answers: turn.answers_view(identity, &self.players),
+                allowed_time: VOTING_TIMEOUT_SECS,
             },
             (GameStage::Reviewing, Some(turn)) => ClientGameState::Reviewing {
                 question: turn.question.clone(),
@@ -620,7 +622,7 @@ async fn end_answering(session: Arc<Mutex<Session>>, turn: usize) {
         let async_session = Arc::clone(&session);
         let turn_number = locked_session.turns.len() - 1;
         tokio::task::spawn(async move {
-            tokio::time::sleep(tokio::time::Duration::from_secs(VOTING_TIMEOUT_SECS)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(VOTING_TIMEOUT_SECS.into())).await;
             end_voting(async_session, turn_number).await;
         });
         locked_session.broadcast.clone()
@@ -715,7 +717,10 @@ async fn handle_client_message(
             let async_session = Arc::clone(&session);
             let turn_number = locked_session.turns.len() - 1;
             tokio::task::spawn(async move {
-                tokio::time::sleep(tokio::time::Duration::from_secs(ANSWERING_TIMEOUT_SECS)).await;
+                tokio::time::sleep(tokio::time::Duration::from_secs(
+                    ANSWERING_TIMEOUT_SECS.into(),
+                ))
+                .await;
                 end_answering(async_session, turn_number).await;
             });
             locked_session.broadcast.clone()
@@ -743,7 +748,10 @@ async fn handle_client_message(
                 let async_session = Arc::clone(&session);
                 let turn_number = locked_session.turns.len() - 1;
                 tokio::task::spawn(async move {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(VOTING_TIMEOUT_SECS)).await;
+                    tokio::time::sleep(tokio::time::Duration::from_secs(
+                        VOTING_TIMEOUT_SECS.into(),
+                    ))
+                    .await;
                     end_voting(async_session, turn_number).await;
                 });
             }
@@ -798,14 +806,16 @@ async fn handle_client_message(
                 .ready_for_next_turn
                 .len();
 
-            if (ready_count as f32) / locked_session.player_count() as f32 > 0.5 {
+            if (ready_count as f32) / locked_session.player_count() as f32 >= 0.5 {
                 let turn_number = locked_session.turns.len();
                 locked_session.stage = GameStage::Answering;
                 locked_session.turns.push(Turn::new());
                 let async_session = Arc::clone(&session);
                 tokio::task::spawn(async move {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(ANSWERING_TIMEOUT_SECS))
-                        .await;
+                    tokio::time::sleep(tokio::time::Duration::from_secs(
+                        ANSWERING_TIMEOUT_SECS.into(),
+                    ))
+                    .await;
                     end_answering(async_session, turn_number).await;
                 });
             }

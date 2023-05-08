@@ -29,11 +29,13 @@ pub enum ClientGameState {
         started_at: u64,
         question: String,
         you_answered: bool,
+        allowed_time: u32,
     },
     Voting {
         started_at: u64,
         question: String,
         answers: HashMap<SessionId, Answer>,
+        allowed_time: u32,
     },
     Reviewing {
         started_at: u64,
@@ -46,10 +48,28 @@ pub enum ClientGameState {
 #[derive(TS)]
 #[ts(export)]
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
+pub struct VoteResult {
+    pub answerer: Player,
+    pub answer_id: SessionId,
+    pub number_of_votes: u8,
+    pub players_who_voted: Vec<SessionId>,
+    pub points: Points,
+}
+#[derive(TS)]
+#[ts(export)]
+#[derive(serde::Serialize, Clone, Deserialize, Debug)]
+pub struct Points {
+    pub guessing_the_bot: u8,
+    pub not_thinking_you_are_the_bot: u8,
+}
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct Answer {
     pub answer: String,
     pub number_of_votes: u8,
-    pub players_who_voted: Vec<Player>,
+    pub voting_result: Option<VoteResult>,
     pub is_me: bool,
     pub answer_id: SessionId,
 }
