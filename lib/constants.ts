@@ -8,5 +8,3 @@ export const PLAYER_NAMES = [
 ];
 
 export const NUM_QUESTIONS_PER_GAME = 3;
-export const TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS = 60;
-export const TIME_ALLOWANCE_VOTING_RESULTS_SECONDS = 6000;

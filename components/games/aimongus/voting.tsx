@@ -2,7 +2,6 @@ import { useState } from "react";
 import { GameStateProps } from "../../../pages/game";
 import { getAvatar } from "../../avatars";
 import { Timer } from "./timer";
-import { TIME_ALLOWANCE_VOTING_RESULTS_SECONDS } from "../../../lib/constants";
 
 interface AnswerProps {
   answer: GameStateProps<"Voting">["game"]["game_state"]["content"]["answers"][number];
@@ -94,7 +93,7 @@ export default function Voting(props: GameStateProps<"Voting">) {
       </div>
       <div>
         <Timer
-          totalTime={TIME_ALLOWANCE_VOTING_RESULTS_SECONDS * 1000}
+          totalTime={game.game_state.content.allowed_time * 1000}
           timeStarted={new Date(
             Number(game.game_state.content.started_at)
           ).getTime()}

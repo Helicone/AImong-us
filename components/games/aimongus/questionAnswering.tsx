@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import { MyClientGameStateView } from "../../../aimongus_types/bindings/ExtractClientState";
-import {
-  NUM_PLAYERS,
-  NUM_QUESTIONS_PER_GAME,
-  TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS,
-} from "../../../lib/constants";
+
 import { GameStateProps } from "../../../pages/game";
 import { Timer } from "./timer";
 
@@ -61,7 +57,7 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
           </button>
           <div>
             <Timer
-              totalTime={TOTAL_TIME_TO_ANSWER_QUESTION_SECONDS * 1000}
+              totalTime={game.game_state.content.allowed_time * 1000}
               timeStarted={new Date(
                 Number(game.game_state.content.started_at)
               ).getTime()}
