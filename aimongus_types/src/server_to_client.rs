@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use rand::Rng;
 use serde::Deserialize;
@@ -14,7 +14,7 @@ pub struct ClientGameStateView {
     pub game_state: ClientGameState,
     pub me: SessionId,
     pub room_code: String,
-    pub messages: Vec<ChatMessage>
+    pub messages: Vec<ChatMessage>,
 }
 
 #[derive(TS)]
@@ -60,7 +60,8 @@ pub struct Answer {
 pub struct Player {
     pub random_unique_id: SessionId,
     pub score: u32,
-    pub username: String
+    pub username: String,
+    pub is_host: bool,
 }
 
 #[derive(TS)]
@@ -76,12 +77,11 @@ impl SessionId {
     }
 }
 
-
 #[derive(TS)]
 #[ts(export)]
 #[derive(serde::Serialize, Clone, Deserialize, Debug, PartialEq, Eq, Hash)]
 pub struct ChatMessage {
     pub sender: SessionId,
     pub time_sent: u128,
-    pub message: String
+    pub message: String,
 }

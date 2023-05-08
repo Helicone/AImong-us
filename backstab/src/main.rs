@@ -184,22 +184,24 @@ struct Player {
     identity: ClientIdentity,
     score: u32,
     is_bot: bool,
-    username: String
+    username: String,
     last_message_sent: u128,
+    is_host: bool,
 }
 
 impl Player {
-    fn new(identity: ClientIdentity, is_bot: bool, username: String) -> Self {
+    fn new(identity: ClientIdentity, is_bot: bool, username: String, is_host: bool) -> Self {
         Player {
             session_id: SessionId::new(),
             identity: identity,
             score: 0,
             is_bot,
-            username
+            username,
             last_message_sent: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_millis(),
+            is_host,
         }
     }
 }
@@ -209,7 +211,8 @@ impl From<Player> for server_to_client::Player {
         Self {
             random_unique_id: player.session_id,
             score: player.score,
-            username: player.username
+            username: player.username,
+            is_host: player.is_host,
         }
     }
 }
@@ -257,14 +260,14 @@ impl Session {
     fn new_with_creator(
         creator_identity: ClientIdentity,
         room_code: &RoomCode,
-        creator_username: String
+        creator_username: String,
     ) -> (Self, async_broadcast::Receiver<ServerMessage>) {
         let (sender, receiver) = async_broadcast::broadcast(1);
         (
             Self {
                 room_code: room_code.clone(),
                 creator_identity,
-                players: vec![Player::new(creator_identity, false, creator_username)],
+                players: vec![Player::new(creator_identity, false, creator_username, true)],
                 broadcast: sender,
                 turns: vec![],
                 stage: GameStage::NotStarted,
@@ -283,7 +286,7 @@ impl Session {
             .next()
             .is_none()
         {
-            let player = Player::new(identity, is_ai, username);
+            let player = Player::new(identity, is_ai, username, false);
             self.players.push(player);
         }
     }

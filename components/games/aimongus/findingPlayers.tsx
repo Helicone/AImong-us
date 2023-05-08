@@ -106,11 +106,20 @@ function Wrapper(
     children: React.ReactNode;
   }
 ) {
+  const { game, sendMessage } = props;
+
   const [message, setMessage] = useState("");
   const [isShifted, setIsShifted] = useState(false);
   const msgs = props.game.messages;
   return (
     <div>
+      <div>
+        {game.players.map((player, i) => (
+          <div key={i}>
+            {player.username} {player.is_host ? "(host)" : ""}
+          </div>
+        ))}
+      </div>
       {props.children}
       <div>Chat here:</div>
       <div className="flex flex-col">
