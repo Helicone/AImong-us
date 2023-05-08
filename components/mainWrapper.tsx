@@ -1,3 +1,4 @@
+import { ClientGameState } from "../aimongus_types/bindings/ClientGameState";
 import { ClientGameStateView } from "../aimongus_types/bindings/ClientGameStateView";
 import { NUM_QUESTIONS_PER_GAME } from "../lib/constants";
 import { Col } from "./layout/col";
@@ -6,6 +7,41 @@ interface MainWrapperProps {
   children: React.ReactNode;
   title: string;
   game?: ClientGameStateView;
+}
+
+const headerInfo: {
+  [T in ClientGameState["state"]]?: {
+    title: string;
+    subtitle: string;
+  };
+} = {
+  Answering: {
+    title: "Answering",
+    subtitle: "Convince other players you are human",
+  },
+  Voting: {
+    title: "Voting",
+    subtitle: "Find the AI",
+  },
+};
+
+function GameHeader(props: MainWrapperProps) {
+  const data =
+    props.game?.game_state.state && headerInfo[props.game?.game_state.state];
+  if (!data) {
+    return null;
+  }
+  const { title, subtitle } = data;
+  return (
+    <div className="flex flex-col gap-1 items-center">
+      <h1 className="text-3xl font-semibold font-mono flex flex-col items-center text-center">
+        {title}
+      </h1>
+      <h2 className="text-sm font-semibold font-mono flex flex-col items-center text-center">
+        ({subtitle})
+      </h2>
+    </div>
+  );
 }
 
 export function MainWrapper(props: MainWrapperProps) {
@@ -40,11 +76,11 @@ export function MainWrapper(props: MainWrapperProps) {
         </div>
       </h1>
       {game && game?.game_state.state !== "Lobby" && (
-        <h2 className="flex flex-row justify-between w-full py-2 border-b px-5 ">
+        <h2 className="flex flex-row justify-between w-full py-2 border-b px-5 items-center ">
           <div>
             Turn {game?.current_turn} / {NUM_QUESTIONS_PER_GAME}
           </div>
-          <div>{game.game_state.state}</div>
+          <GameHeader {...props} />
           <div>{game?.number_of_players} players</div>
         </h2>
       )}

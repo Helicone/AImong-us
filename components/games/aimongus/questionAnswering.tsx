@@ -24,7 +24,7 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
   return (
     <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
       <div className="flex flex-col col-span-2 gap-12">
-        <div className="flex flex-col col-span-2 gap-2">
+        <div className="flex flex-col col-span-2 gap-2 text-center">
           <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
             <div className="max-w-lg bg-white  p-5 rounded-lg bg-">
               {currentQuestion}
