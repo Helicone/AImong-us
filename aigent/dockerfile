@@ -18,6 +18,7 @@ RUN pip install --trusted-host pypi.python.org -r requirements.txt
 # Copy the rest of the application code
 COPY aigent/ .
 COPY aimongus_types ../aimongus_types
+COPY openai ../openai
 
 # Expose the port the app runs on
 EXPOSE 5934
