@@ -5,17 +5,6 @@ export function useLocalStorage<T>(
   initialValue: T,
   onNothingStored?: (setStored: (t: T) => void) => void
 ): [T, (t: T) => void] {
-  // const [storedValue, setStoredValue] = useState(() => {
-  //   try {
-  //     const item =
-  //       typeof window !== "undefined" && window.localStorage.getItem(key);
-  //     return item ? JSON.parse(item) : initialValue;
-  //   } catch (error) {
-  //     console.log(error);
-  //     return initialValue;
-  //   }
-  // });
-
   const [storedValue, setStoredValue] = useState<T>(initialValue);
   const setValue = useCallback(
     (value: T) => {
