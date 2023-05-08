@@ -86,12 +86,14 @@ export default function Home() {
 
   if (router.query.get_new_game == "true") {
     return (
-      <Game websocketAddress={`${baseUrl}/create-room?identity=${user}&username=${router.query.username}`} />
+      <Game
+        websocketAddress={`${baseUrl}/create-room?identity=${user}&username=${router.query.username}&emoji=${router.query.emoji}`}
+      />
     );
   } else if (router.query.room_id) {
     return (
       <Game
-        websocketAddress={`${baseUrl}/join-room?identity=${user}&room=${router.query.room_id}&username=${router.query.username}`}
+        websocketAddress={`${baseUrl}/join-room?identity=${user}&room=${router.query.room_id}&username=${router.query.username}&emoji=${router.query.emoji}`}
       />
     );
   } else {

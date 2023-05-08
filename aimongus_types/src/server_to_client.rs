@@ -61,6 +61,7 @@ pub struct Player {
     pub random_unique_id: SessionId,
     pub score: u32,
     pub username: String,
+    pub emoji: String,
     pub is_host: bool,
 }
 

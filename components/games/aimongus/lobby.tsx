@@ -1,10 +1,31 @@
+import EmojiPicker from "emoji-picker-react";
+
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
+import { Modal } from "../../modal";
+import { EMOJIS } from "../../../lib/emojis";
+import { useLocalStorage } from "../../../lib/hooks/useLocalStorage";
+import { PLAYER_NAMES } from "../../../lib/constants";
 
 export default function Lobby() {
   const [roomId, setRoomId] = useState("");
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useLocalStorage<string>(
+    "user_name",
+    "",
+    (setStored) => {
+      setStored(PLAYER_NAMES[Math.floor(Math.random() * PLAYER_NAMES.length)]);
+    }
+  );
   const router = useRouter();
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedEmoji, setSelectedEmoji] = useLocalStorage<string | null>(
+    "user_emoji",
+    null,
+    (setStored) => {
+      const randomEmoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+      setStored(randomEmoji);
+    }
+  );
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -25,30 +46,68 @@ export default function Lobby() {
               className="bg-purple-500 text-white px-4 py-2 rounded-md ml-2 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
               onClick={() => {
                 console.log("play AImong Us");
-                router.push("/game?room_id=" + roomId+"&username="+username);
+                router.push(
+                  "/game?room_id=" + roomId + "&username=" + username
+                );
               }}
             >
               Join Game
             </button>
           </div>
           <div>
-          <input
-              type="text"
-              placeholder="Username"
-              className="border-2 border-gray-800 bg-gray-100 text-gray-800 p-2 w-full rounded-md focus:outline-none focus:border-green-500"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
+            <div className="flex flex-row gap-2">
+              <Modal open={showEmojiPicker} setOpen={setShowEmojiPicker}>
+                <EmojiPicker
+                  onEmojiClick={(e, emojiObject) => {
+                    setSelectedEmoji(e.emoji);
+                    setShowEmojiPicker(false);
+                  }}
+                />
+              </Modal>
+              <button
+                className="text-xl border-2 border-black text-white px-4 py-2 rounded-md ml-2 hover:bg-gray-900 "
+                onClick={() => setShowEmojiPicker(true)}
+              >
+                {selectedEmoji}
+              </button>
+
+              <input
+                type="text"
+                placeholder="Username"
+                className="border-2 border-gray-800 bg-gray-100 text-gray-800 p-2 w-full rounded-md focus:outline-none focus:border-green-500"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <button
+                className="text-xl border-2 border-black text-white px-4 py-2 rounded-md hover:bg-gray-900 "
+                onClick={() => {
+                  setSelectedEmoji(
+                    EMOJIS[Math.floor(Math.random() * EMOJIS.length)]
+                  );
+                  setUsername(
+                    PLAYER_NAMES[
+                      Math.floor(Math.random() * PLAYER_NAMES.length)
+                    ]
+                  );
+                }}
+              >
+                🎲
+              </button>
+            </div>
           </div>
-          <button
-            className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-800"
-            onClick={() => {
-              console.log("play AImong Us");
-              router.push("/game?get_new_game=true&username="+username);
-            }}
-          >
-            + Create Game
-          </button>
+          {!!roomId || (
+            <button
+              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-800"
+              onClick={() => {
+                console.log("play AImong Us");
+                router.push(
+                  `/game?get_new_game=true&username=${username}&emoji=${selectedEmoji}`
+                );
+              }}
+            >
+              + Create Game
+            </button>
+          )}
         </div>
       </div>
     </div>
