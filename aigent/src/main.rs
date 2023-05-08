@@ -9,7 +9,7 @@
 //! client.
 //!
 //! You can use this example together with the `server` example.
-//! 
+//!
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
@@ -18,19 +18,16 @@ use std::{env, sync::Arc};
 use aimongus_types::client_to_server::ClientResponse;
 use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView};
 use futures_util::SinkExt;
-use futures_util::{ pin_mut, stream::SplitSink, StreamExt};
+use futures_util::{pin_mut, stream::SplitSink, StreamExt};
 use rand::Rng;
 use reqwest::Url;
-use tokio::{
-    net::TcpStream,
-    sync::Mutex,
-};
+use tokio::{net::TcpStream, sync::Mutex};
 use tokio_tungstenite::{
     connect_async, tungstenite::protocol::Message, MaybeTlsStream, WebSocketStream,
 };
 
+use openai::openai::{ApiRequest, ChatMessage};
 use serde::{Deserialize, Serialize};
-use openai::openai::{ChatMessage, ApiRequest};
 
 #[derive(Debug)]
 struct Session {
@@ -72,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     base_url.push_str("&aikey=");
     base_url.push_str(&ai_code);
     base_url.push_str("&username=jeff");
+    base_url.push_str("&emoji=🤖");
     println!("{}", base_url);
     let url: Url = url::Url::parse(&base_url).unwrap();
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect");
