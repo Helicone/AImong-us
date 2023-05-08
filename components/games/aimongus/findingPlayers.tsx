@@ -116,6 +116,7 @@ function Wrapper(
       <div>
         {game.players.map((player, i) => (
           <div key={i}>
+            {player.emoji}
             {player.username} {player.is_host ? "(host)" : ""}
           </div>
         ))}

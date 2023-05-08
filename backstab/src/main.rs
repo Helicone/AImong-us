@@ -187,10 +187,17 @@ struct Player {
     username: String,
     last_message_sent: u128,
     is_host: bool,
+    emoji: String,
 }
 
 impl Player {
-    fn new(identity: ClientIdentity, is_bot: bool, username: String, is_host: bool) -> Self {
+    fn new(
+        identity: ClientIdentity,
+        is_bot: bool,
+        username: String,
+        is_host: bool,
+        emoji: String,
+    ) -> Self {
         Player {
             session_id: SessionId::new(),
             identity: identity,
@@ -202,6 +209,7 @@ impl Player {
                 .unwrap()
                 .as_millis(),
             is_host,
+            emoji,
         }
     }
 }
@@ -213,6 +221,7 @@ impl From<Player> for server_to_client::Player {
             score: player.score,
             username: player.username,
             is_host: player.is_host,
+            emoji: player.emoji,
         }
     }
 }
@@ -258,16 +267,15 @@ impl Session {
     }
 
     fn new_with_creator(
-        creator_identity: ClientIdentity,
         room_code: &RoomCode,
-        creator_username: String,
+        creator: Player,
     ) -> (Self, async_broadcast::Receiver<ServerMessage>) {
         let (sender, receiver) = async_broadcast::broadcast(1);
         (
             Self {
                 room_code: room_code.clone(),
-                creator_identity,
-                players: vec![Player::new(creator_identity, false, creator_username, true)],
+                creator_identity: creator.identity.clone(),
+                players: vec![creator],
                 broadcast: sender,
                 turns: vec![],
                 stage: GameStage::NotStarted,
@@ -278,7 +286,13 @@ impl Session {
         )
     }
 
-    fn add_player(&mut self, identity: ClientIdentity, is_ai: bool, username: String) {
+    fn add_player(
+        &mut self,
+        identity: ClientIdentity,
+        is_ai: bool,
+        username: String,
+        emoji: String,
+    ) {
         if self
             .players
             .iter()
@@ -286,7 +300,7 @@ impl Session {
             .next()
             .is_none()
         {
-            let player = Player::new(identity, is_ai, username, false);
+            let player = Player::new(identity, is_ai, username, false, emoji);
             self.players.push(player);
         }
     }
@@ -404,15 +418,19 @@ impl<'v> rocket::form::FromFormField<'v> for ClientIdentity {
 
 /// Creates a new session and sends the random code to the client.
 /// Once created, client subscribes to the session's websocket.
-#[get("/create-room?<identity>&<username>")]
+#[get("/create-room?<identity>&<username>&<emoji>")]
 fn create_room(
     identity: ClientIdentity,
     username: String,
+    emoji: String,
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
 ) -> ws::Channel<'static> {
     let room_code = RoomCode::new();
-    let (session, receiver) = Session::new_with_creator(identity, &room_code, username);
+    let (session, receiver) = Session::new_with_creator(
+        &room_code,
+        Player::new(identity, false, username, true, emoji),
+    );
     // println!("New session created with AI code: {}", session.aikey);
 
     // Spawn bot
@@ -439,11 +457,12 @@ fn create_room(
 
 /// Joins an existing session using its random code.
 /// Once joined, client subscribes to the session's websocket.
-#[get("/join-room?<identity>&<room>&<username>&<aikey>")]
+#[get("/join-room?<identity>&<room>&<username>&<aikey>&<emoji>")]
 fn join_room(
     identity: ClientIdentity,
     room: RoomCode,
     username: String,
+    emoji: String,
     aikey: Option<u32>,
     sessions: &State<SessionsMap>,
     ws: ws::WebSocket,
@@ -459,7 +478,7 @@ fn join_room(
 
             println!("adding player, is_ai={}", is_ai);
             println!("current players: {:#?}", session.players);
-            session.add_player(identity, is_ai, username);
+            session.add_player(identity, is_ai, username, emoji);
             receiver = session.broadcast.new_receiver();
         }
         Ok(manage_game_socket(
