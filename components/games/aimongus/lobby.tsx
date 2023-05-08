@@ -47,7 +47,12 @@ export default function Lobby() {
               onClick={() => {
                 console.log("play AImong Us");
                 router.push(
-                  "/game?room_id=" + roomId + "&username=" + username
+                  "/game?room_id=" +
+                    roomId +
+                    "&username=" +
+                    username +
+                    "&emoji=" +
+                    selectedEmoji
                 );
               }}
             >
