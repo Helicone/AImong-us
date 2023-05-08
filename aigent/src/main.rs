@@ -9,8 +9,7 @@
 //! client.
 //!
 //! You can use this example together with the `server` example.
-
-use std::fmt::format;
+//! 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
@@ -18,13 +17,11 @@ use std::{env, sync::Arc};
 
 use aimongus_types::client_to_server::ClientResponse;
 use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView};
-use futures_channel::mpsc::UnboundedSender;
 use futures_util::SinkExt;
-use futures_util::{future, pin_mut, stream::SplitSink, StreamExt};
+use futures_util::{ pin_mut, stream::SplitSink, StreamExt};
 use rand::Rng;
 use reqwest::Url;
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
     sync::Mutex,
 };
@@ -33,44 +30,7 @@ use tokio_tungstenite::{
 };
 
 use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ChatMessage {
-    role: String,
-    content: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Choice {
-    message: ChatMessage,
-    finish_reason: String,
-    index: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Usage {
-    prompt_tokens: i32,
-    completion_tokens: i32,
-    total_tokens: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ApiResponse {
-    id: String,
-    object: String,
-    created: i64,
-    model: String,
-    usage: Usage,
-    choices: Vec<Choice>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ApiRequest {
-    model: String,
-    messages: Vec<ChatMessage>,
-    temperature: f32,
-    max_tokens: i32,
-}
+use openai::openai::{ChatMessage, ApiRequest};
 
 #[derive(Debug)]
 struct Session {
@@ -83,27 +43,6 @@ impl Session {
             voting_thread_spawned: AtomicBool::new(false),
         }
     }
-}
-
-async fn call_openai(request: ApiRequest) -> Result<ApiResponse, Box<dyn std::error::Error>> {
-    let client = reqwest::Client::new();
-    let resp = client
-        .post("https://oai.hconeai.com/v1/chat/completions")
-        .bearer_auth(env::var("OPENAI_API_KEY").unwrap())
-        .header("Content-Type", "application/json")
-        .header("OpenAI-Organization", "")
-        .body(serde_json::to_string(&request).unwrap())
-        .send();
-
-    let resp = &resp.await?.text().await?;
-
-    let api_response: ApiResponse = serde_json::from_str(resp).map_err(|e| {
-        format!(
-            "Failed to parse response from OpenAI: {}, resp: {}",
-            e, resp
-        )
-    })?;
-    return Ok(api_response);
 }
 
 #[tokio::main]
@@ -181,7 +120,7 @@ async fn handle_server_message(
             ..
         } => {
             // println!("Received a message: {:?}", message);
-            let api_response = call_openai(ApiRequest {
+            let api_response = openai::openai::call_openai(ApiRequest {
                 model: "gpt-3.5-turbo".to_string(),
                 messages: vec![ChatMessage {
                     role: "system".to_string(),
