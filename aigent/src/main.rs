@@ -9,8 +9,7 @@
 //! client.
 //!
 //! You can use this example together with the `server` example.
-
-use std::fmt::format;
+//! 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
@@ -18,13 +17,11 @@ use std::{env, sync::Arc};
 
 use aimongus_types::client_to_server::ClientResponse;
 use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView};
-use futures_channel::mpsc::UnboundedSender;
 use futures_util::SinkExt;
-use futures_util::{future, pin_mut, stream::SplitSink, StreamExt};
+use futures_util::{ pin_mut, stream::SplitSink, StreamExt};
 use rand::Rng;
 use reqwest::Url;
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
     sync::Mutex,
 };

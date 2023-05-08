@@ -2,7 +2,7 @@
 extern crate rocket;
 
 use aimongus_types::client_to_server::ClientResponse;
-use aimongus_types::server_to_client::{self, ChatMessage};
+use aimongus_types::server_to_client::{self};
 use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView, SessionId};
 use futures::stream::SplitSink;
 use objects::server_to_server::ServerMessage;
@@ -166,6 +166,27 @@ enum GameStage {
     GameOver,
 }
 
+#[derive(Clone, Debug)]
+struct ChatMessage {
+    sender: SessionId,
+    time_sent: SystemTime,
+    chat_message: String,
+}
+
+impl From<ChatMessage> for server_to_client::ChatMessage {
+    fn from(message: ChatMessage) -> Self {
+        Self {
+            sender: message.sender,
+            time_sent: message
+                .time_sent
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis(),
+            message: message.chat_message.clone(),
+        }
+    }
+}
+
 struct Session {
     room_code: RoomCode,
     creator_identity: ClientIdentity,
@@ -185,7 +206,7 @@ struct Player {
     score: u32,
     is_bot: bool,
     username: String,
-    last_message_sent: u128,
+    last_message_sent: SystemTime,
     is_host: bool,
 }
 
@@ -197,10 +218,7 @@ impl Player {
             score: 0,
             is_bot,
             username,
-            last_message_sent: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis(),
+            last_message_sent: SystemTime::now(),
             is_host,
         }
     }
@@ -356,7 +374,12 @@ impl Session {
             current_turn: self.turns.len() as u8,
             me: self.player(&identity).unwrap().session_id.clone(),
             room_code: self.room_code.to_string(),
-            messages: self.messages.clone(),
+            messages: self
+                .messages
+                .clone()
+                .iter()
+                .map(|m| server_to_client::ChatMessage::from(m.clone()))
+                .collect(),
         }
     }
 
@@ -780,19 +803,22 @@ async fn handle_client_message(
             let session_id = player.unwrap().session_id.clone();
             let last_sent = player.unwrap().last_message_sent;
 
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis();
+            let now = SystemTime::now();
 
-            if last_sent + MS_BETWEEN_CHAT_MESSAGES > now {
+            if last_sent.duration_since(UNIX_EPOCH).unwrap().as_millis() + MS_BETWEEN_CHAT_MESSAGES
+                > now.duration_since(UNIX_EPOCH).unwrap().as_millis()
+            {
+                return;
+            }
+
+            if chat_message.len() == 0 {
                 return;
             }
 
             locked_session.messages.push(ChatMessage {
                 sender: session_id,
-                time_sent: now,
-                message: chat_message,
+                time_sent: SystemTime::now(),
+                chat_message: chat_message,
             });
             let mut player = locked_session.get_player_mut(&identity);
             player.last_message_sent = now;
