@@ -113,7 +113,9 @@ async fn handle_server_message(
                 ClientGameState::Answering {
                     started_at,
                     question,
-                    you_answered, allowed_time },
+                    you_answered,
+                    allowed_time,
+                },
             ..
         } => {
             // println!("Received a message: {:?}", message);
