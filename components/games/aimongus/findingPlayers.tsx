@@ -5,6 +5,7 @@ import { GameStateProps } from "../../../pages/game";
 import searching from "../../../public/lottie/finding.json";
 import { Col } from "../../layout/col";
 import { Row } from "../../layout/row";
+import { CgRowLast } from "react-icons/cg";
 
 const Toggle = ({ onChange }: { onChange: (isToggled: boolean) => void }) => {
   const [isToggled, setIsToggled] = useState(false);
@@ -40,10 +41,6 @@ function FindingPlayersHost(props: GameStateProps<"Lobby">) {
 
   return (
     <Col className="h-full items-center gap-6">
-      <div className="flex flex-row items-center gap-2">
-        <div>Public</div>
-        <Toggle onChange={() => {}} />
-      </div>
       <div className="text-sm right-0 bottom-0">{playerText}</div>
 
       {game.game_state.content.is_host ? (
