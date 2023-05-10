@@ -5,7 +5,7 @@ import Lobby from "../components/games/aimongus/lobby";
 import StarBackground from "../components/games/aimongus/star";
 import JoiningGame, {
   ProfilePicker,
-} from "../components/games/aimongus/joining-game";
+} from "../components/games/aimongus/profile-picker";
 import { useLocalStorage } from "../lib/hooks/useLocalStorage";
 import { useState } from "react";
 import { PLAYER_NAMES } from "../lib/constants";
