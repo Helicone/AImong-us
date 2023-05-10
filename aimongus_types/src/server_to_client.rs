@@ -12,6 +12,7 @@ pub struct ClientGameStateView {
     pub players: Vec<Player>,
     pub current_turn: u8,
     pub game_state: ClientGameState,
+    pub turn_count: u8,
     pub me: SessionId,
     pub room_code: String,
     pub messages: Vec<ChatMessage>,
@@ -38,6 +39,7 @@ pub enum ClientGameState {
         allowed_time: u32,
     },
     Reviewing {
+        is_game_over: bool,
         started_at: u64,
         question: String,
         results: Vec<VoteResult>,

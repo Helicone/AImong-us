@@ -28,6 +28,7 @@ pub struct ClientIdentity(pub u128);
 #[derive(Eq, Hash, PartialEq, Clone)]
 struct RoomCode([u8; 4]);
 
+const TURN_COUNT: u8 = 3;
 const ANSWERING_TIMEOUT_SECS: u32 = 60;
 const VOTING_TIMEOUT_SECS: u32 = 10;
 const MS_BETWEEN_CHAT_MESSAGES: u128 = 500;
@@ -440,6 +441,7 @@ impl Session {
                 allowed_time: VOTING_TIMEOUT_SECS,
             },
             (GameStage::Reviewing, Some(turn)) => ClientGameState::Reviewing {
+                is_game_over: self.turns.len() == TURN_COUNT as usize,
                 question: turn.question.clone(),
                 started_at: turn
                     .reviewing_started_at
@@ -462,6 +464,7 @@ impl Session {
 
     fn get_game_state_view(&self, identity: ClientIdentity) -> ClientGameStateView {
         ClientGameStateView {
+            turn_count: TURN_COUNT,
             number_of_players: self.non_bot_players().len() as u8,
             players: self
                 .players

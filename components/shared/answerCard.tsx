@@ -62,7 +62,7 @@ interface AnswerPropsResult {
 export function AnswerCardResult(props: AnswerPropsResult) {
   const { answer, isBot, player, maxPoints, playersWhoVoted, points } = props;
 
-  const canClick = !answer.is_me;
+  const winner = player.score === maxPoints;
   const emoji = player.emoji === "undefined" ? "👤" : player.emoji;
 
   const percentagePoints = Math.round((player.score / (maxPoints ?? 0)) * 100);
@@ -112,6 +112,7 @@ export function AnswerCardResult(props: AnswerPropsResult) {
           isBot && "rounded-t-xl"
         )}
       >
+        {winner && <div>🎉 Winner 🎉</div>}
         <div className="flex flex-row justify-start w-full items-center gap-3">
           <div className="flex-shrink-0 relative w-24 h-20 border-2 rounded-md flex flex-col items-center justify-end pb-2">
             <div className="text-3xl">{emoji}</div>

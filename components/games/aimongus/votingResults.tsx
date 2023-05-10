@@ -61,6 +61,17 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
 
   return (
     <div className="flex flex-col col-span-2 gap-5">
+      <div>
+        {game.game_state.content.is_game_over ? (
+          <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
+            Game over!
+          </div>
+        ) : (
+          <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
+            Round over!
+          </div>
+        )}
+      </div>
       <div className="text-xl font-semibold font-mono w-full flex flex-col items-center text-center">
         <div className="max-w-lg bg-white  p-5 rounded-lg bg-">
           {currentQuestion}
@@ -76,36 +87,44 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
             .filter((player) => player !== null) as Player[]
         }
       />
-      {playerAnswers.map((result, i) => (
-        <div key={i}>
-          <AnswerCardResult
-            answer={result.answer}
-            player={getPlayer(result.answerer)!}
-            maxPoints={maxPoints}
-            playersWhoVoted={
-              result.players_who_voted
-                .map(getPlayer)
-                .filter((player) => player !== null) as Player[]
-            }
-            points={result.points}
-          />
+      {playerAnswers
+        .map((answer) => ({
+          ...answer,
+          player: getPlayer(answer.answerer)!,
+        }))
+        .sort((a, b) => b.player.score - a.player.score)
+        .map((result, i) => (
+          <div key={i}>
+            <AnswerCardResult
+              answer={result.answer}
+              player={result.player}
+              maxPoints={maxPoints}
+              playersWhoVoted={
+                result.players_who_voted
+                  .map(getPlayer)
+                  .filter((player) => player !== null) as Player[]
+              }
+              points={result.points}
+            />
+          </div>
+        ))}
+      {!game.game_state.content.is_game_over && (
+        <div className="flex flex-col items-center w-full gap-2">
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => {
+              sendMessage("ReadyForNextTurn");
+            }}
+          >
+            Ready for next turn
+          </button>
+          <div>
+            Players ready:{" "}
+            {game.game_state.content.number_of_players_ready ?? 0} /{" "}
+            {game.number_of_players}
+          </div>
         </div>
-      ))}
-
-      <div className="flex flex-col items-center w-full gap-2">
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          onClick={() => {
-            sendMessage("ReadyForNextTurn");
-          }}
-        >
-          Ready for next turn
-        </button>
-        <div>
-          Players ready: {game.game_state.content.number_of_players_ready ?? 0}{" "}
-          / {game.number_of_players}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

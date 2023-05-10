@@ -4,4 +4,4 @@ import type { ClientGameState } from "./ClientGameState";
 import type { Player } from "./Player";
 import type { SessionId } from "./SessionId";
 
-export interface ClientGameStateView { number_of_players: number, players: Array<Player>, current_turn: number, game_state: ClientGameState, me: SessionId, room_code: string, messages: Array<ChatMessage>, }
+export interface ClientGameStateView { number_of_players: number, players: Array<Player>, current_turn: number, game_state: ClientGameState, turn_count: number, me: SessionId, room_code: string, messages: Array<ChatMessage>, }
