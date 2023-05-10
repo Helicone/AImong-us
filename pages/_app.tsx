@@ -2,6 +2,8 @@ import "../styles/globals.css";
 import type { AppProps } from "next/app";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { NotificationProvider } from "../components/notification/NotificationContext";
+import { Notification } from "../components/notification/Notification";
 
 const queryClient = new QueryClient();
 export default function App({ Component, pageProps }: AppProps) {
@@ -12,7 +14,10 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
       <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
+        <NotificationProvider>
+          <Notification />
+          <Component {...pageProps} />
+        </NotificationProvider>
       </QueryClientProvider>
     </>
   );
