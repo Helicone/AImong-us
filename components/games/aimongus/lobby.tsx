@@ -6,6 +6,9 @@ import { Modal } from "../../modal";
 import { EMOJIS } from "../../../lib/emojis";
 import { useLocalStorage } from "../../../lib/hooks/useLocalStorage";
 import { PLAYER_NAMES } from "../../../lib/constants";
+import { Col } from "../../layout/col";
+import { Row } from "../../layout/row";
+import { CgDice5 } from "react-icons/cg";
 
 export default function Lobby() {
   const [roomId, setRoomId] = useState("");
@@ -28,95 +31,93 @@ export default function Lobby() {
   );
 
   return (
-    <div className="flex flex-col items-center w-full z-10">
-      <div className="flex flex-col max-w-lg w-full gap-2 text-center mt-20 bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">
-          Find the bot or die 🔪
-        </h1>
-        <div className="flex flex-col justify-between items-center gap-3">
-          <div className="flex flex-row">
+    <Col className="items-center w-full z-10">
+      <Col className=" max-w-lg w-full gap-4 text-center mt-20 p-8 rounded-lg shadow-lg  text-white bg-violet-950">
+        <h1 className="text-xl text-white mb-4">Find the bot or die</h1>
+        <input
+          type="text"
+          placeholder="Game ID"
+          className="border-2 border-transparent bg-violet-900 w-full rounded-md focus:outline-none focus:border-pink-500 px-4 py-2"
+          value={roomId}
+          onChange={(e) => setRoomId(e.target.value)}
+        />
+        <div>
+          <Row className=" w-full relative gap-3">
+            <Modal open={showEmojiPicker} setOpen={setShowEmojiPicker}>
+              <EmojiPicker
+                onEmojiClick={(e, emojiObject) => {
+                  setSelectedEmoji(e.emoji);
+                  setShowEmojiPicker(false);
+                }}
+              />
+            </Modal>
+            <button
+              className="text-3xl w-14 rounded-full bg-gradient-to-bl bg-gradient from-slate-600 to-slate-400 border-2 border-slate-400 hover:border-pink-500 transition-all"
+              onClick={() => setShowEmojiPicker(true)}
+            >
+              {selectedEmoji}
+            </button>
+
             <input
               type="text"
-              placeholder="Game ID"
-              className="border-2 border-gray-800 bg-gray-100 text-gray-800 p-2 w-full rounded-md focus:outline-none focus:border-purple-500"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
+              placeholder="Username"
+              className="border-2 border-transparent bg-violet-900 w-full rounded-md focus:outline-none focus:border-pink-500 px-4 py-2"
+              value={username}
+              onChange={(e) =>
+                e.target.value.length < 10 && setUsername(e.target.value)
+              }
             />
             <button
-              className="bg-purple-500 text-white px-4 py-2 rounded-md ml-2 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="absolute right-2 top-2 opacity-60 hover:opacity-100 transition-opacity"
               onClick={() => {
-                console.log("play AImong Us");
-                router.push(
-                  "/game?room_id=" +
-                    roomId +
-                    "&username=" +
-                    username +
-                    "&emoji=" +
-                    selectedEmoji
+                setSelectedEmoji(
+                  EMOJIS[Math.floor(Math.random() * EMOJIS.length)]
+                );
+                setUsername(
+                  PLAYER_NAMES[Math.floor(Math.random() * PLAYER_NAMES.length)]
                 );
               }}
             >
-              Join Game
+              <CgDice5 className="h-6 w-6" />
             </button>
-          </div>
-          <div>
-            <div className="flex flex-row gap-2">
-              <Modal open={showEmojiPicker} setOpen={setShowEmojiPicker}>
-                <EmojiPicker
-                  onEmojiClick={(e, emojiObject) => {
-                    setSelectedEmoji(e.emoji);
-                    setShowEmojiPicker(false);
-                  }}
-                />
-              </Modal>
-              <button
-                className="text-xl border-2 border-black text-white px-4 py-2 rounded-md ml-2 hover:bg-gray-900 "
-                onClick={() => setShowEmojiPicker(true)}
-              >
-                {selectedEmoji}
-              </button>
-
-              <input
-                type="text"
-                placeholder="Username"
-                className="border-2 border-gray-800 bg-gray-100 text-gray-800 p-2 w-full rounded-md focus:outline-none focus:border-green-500"
-                value={username}
-                onChange={(e) =>
-                  e.target.value.length < 10 && setUsername(e.target.value)
-                }
-              />
-              <button
-                className="text-xl border-2 border-black text-white px-4 py-2 rounded-md hover:bg-gray-900 "
-                onClick={() => {
-                  setSelectedEmoji(
-                    EMOJIS[Math.floor(Math.random() * EMOJIS.length)]
-                  );
-                  setUsername(
-                    PLAYER_NAMES[
-                      Math.floor(Math.random() * PLAYER_NAMES.length)
-                    ]
-                  );
-                }}
-              >
-                🎲
-              </button>
-            </div>
-          </div>
-          {!!roomId || (
-            <button
-              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-800"
-              onClick={() => {
-                console.log("play AImong Us");
-                router.push(
-                  `/game?get_new_game=true&username=${username}&emoji=${selectedEmoji}`
-                );
-              }}
-            >
-              + Create Game
-            </button>
-          )}
+          </Row>
         </div>
-      </div>
-    </div>
+        <button
+          className="bg-violet-600 text-white px-4 py-2 rounded-md hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-purple-500 w-full disabled:bg-slate-500 disabled:cursor-not-allowed transition-colors"
+          disabled={
+            !roomId || roomId.length < 4 || !username || username.length < 1
+          }
+          onClick={() => {
+            console.log("play AImong Us");
+            router.push(
+              "/game?room_id=" +
+                roomId +
+                "&username=" +
+                username +
+                "&emoji=" +
+                selectedEmoji
+            );
+          }}
+        >
+          Join Game
+        </button>
+        <Row className="items-center my-4 opacity-80">
+          <hr className="w-full" />
+          <span className="mx-4">OR</span>
+          <hr className="w-full" />
+        </Row>
+        <button
+          className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-500"
+          onClick={() => {
+            console.log("play AImong Us");
+            router.push(
+              `/game?get_new_game=true&username=${username}&emoji=${selectedEmoji}`
+            );
+          }}
+        >
+          + Create Game
+        </button>
+      </Col>
+    </Col>
   );
 }

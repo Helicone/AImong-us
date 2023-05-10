@@ -50,11 +50,11 @@ export function MainWrapper(props: MainWrapperProps) {
   return (
     <main className="w-screen h-screen bg-black">
       <div className="z-10">
-        <h1 className="text-center w-full py-2 border-b px-5 bg-black z-10">
+        <h1 className="text-center w-full py-2 px-5 z-10 bg-violet-950">
           <div className="">
             <div className="flex md:flex-row w-full justify-between items-center">
               <div className="text-center w-full"></div>
-              <div className="text-center w-full text-5xl font-mono text-white">
+              <div className="text-center w-full text-md font-mono text-white">
                 AImong.us
               </div>
               <div className="w-full text-right">
