@@ -15,6 +15,8 @@ import Voting from "../components/games/aimongus/voting";
 import VotingResults from "../components/games/aimongus/votingResults";
 import useUser from "../lib/hooks/useUser";
 import { useWebsocket } from "../lib/hooks/useWebhook";
+import { GameIslandWrapper } from "../components/GameIsland";
+import StarBackground from "../components/games/aimongus/star";
 
 export interface GameStateProps<T extends ClientGameState["state"]> {
   game: MyClientGameStateView<T>;
@@ -48,7 +50,9 @@ function GameIsolateChannel({
     return (
       <div>
         <MainWrapper title="AImong Us" game={gameState}>
-          <GameState game={gameState as any} sendMessage={sendMessage} />
+          <GameIslandWrapper game={gameState} sendMessage={sendMessage}>
+            <GameState game={gameState as any} sendMessage={sendMessage} />
+          </GameIslandWrapper>
         </MainWrapper>
       </div>
     );
@@ -84,17 +88,20 @@ export default function Home() {
   }
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "ws://localhost:8000";
 
-  if (router.query.get_new_game == "true") {
+  const wsAddress =
+    router.query.get_new_game == "true"
+      ? `${baseUrl}/create-room?identity=${user}&username=${router.query.username}&emoji=${router.query.emoji}`
+      : router.query.room_id
+      ? `${baseUrl}/join-room?identity=${user}&room=${router.query.room_id}&username=${router.query.username}&emoji=${router.query.emoji}`
+      : undefined;
+  if (wsAddress) {
     return (
-      <Game
-        websocketAddress={`${baseUrl}/create-room?identity=${user}&username=${router.query.username}&emoji=${router.query.emoji}`}
-      />
-    );
-  } else if (router.query.room_id) {
-    return (
-      <Game
-        websocketAddress={`${baseUrl}/join-room?identity=${user}&room=${router.query.room_id}&username=${router.query.username}&emoji=${router.query.emoji}`}
-      />
+      <div>
+        <div className="z-10">
+          <Game websocketAddress={wsAddress} />
+        </div>
+        <StarBackground />
+      </div>
     );
   } else {
     return <div>I dont know how we got here... ummm abort</div>;

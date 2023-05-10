@@ -2,12 +2,12 @@ import { useState } from "react";
 import { GameStateProps } from "../../pages/game";
 import clsx from "clsx";
 
-interface AnswerPropsResult {
+interface AnswerProps {
   answer: GameStateProps<"Voting">["game"]["game_state"]["content"]["answers"][number];
   onClick?: () => void;
   room_code?: string;
 }
-export function AnswerCard(props: AnswerPropsResult) {
+export function AnswerCard(props: AnswerProps) {
   const { answer, onClick, room_code } = props;
 
   const canClick = !answer.is_me;

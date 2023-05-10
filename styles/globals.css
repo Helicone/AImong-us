@@ -1,3 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.star-animation-enter {
+  opacity: 0;
+}
+
+.star-animation-enter-active {
+  opacity: 1;
+  transition: opacity 1s;
+}
+
+.star-animation-appear {
+  opacity: 0;
+}
+
+.star-animation-appear-active {
+  opacity: 1;
+  transition: opacity 1s;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.star-animation-enter-done {
+  animation-name: twinkle;
+  animation-iteration-count: infinite;
+}

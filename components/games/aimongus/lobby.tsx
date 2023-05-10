@@ -28,7 +28,7 @@ export default function Lobby() {
   );
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full z-10">
       <div className="flex flex-col max-w-lg w-full gap-2 text-center mt-20 bg-white p-8 rounded-lg shadow-lg">
         <h1 className="text-4xl font-bold text-gray-800 mb-4">
           Find the bot or die 🔪

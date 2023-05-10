@@ -1,10 +1,10 @@
+import { useState } from "react";
 import Lottie from "react-lottie";
 import { NUM_PLAYERS } from "../../../lib/constants";
 import { GameStateProps } from "../../../pages/game";
 import searching from "../../../public/lottie/finding.json";
 import { Col } from "../../layout/col";
 import { Row } from "../../layout/row";
-import { useState } from "react";
 
 const Toggle = ({ onChange }: { onChange: (isToggled: boolean) => void }) => {
   const [isToggled, setIsToggled] = useState(false);
@@ -108,9 +108,6 @@ function Wrapper(
 ) {
   const { game, sendMessage } = props;
 
-  const [message, setMessage] = useState("");
-  const [isShifted, setIsShifted] = useState(false);
-  const msgs = props.game.messages;
   return (
     <div>
       <div>
@@ -122,53 +119,6 @@ function Wrapper(
         ))}
       </div>
       {props.children}
-      <div>Chat here:</div>
-      <div className="flex flex-col">
-        {msgs.map((msg, i) => (
-          <div key={i}>
-            {msg.sender}: {new Date(Number(msg.time_sent)).toLocaleTimeString()}
-            : {msg.message}
-          </div>
-        ))}
-        <div className="flex flex-row max-w-md gap-2">
-          <textarea
-            rows={2}
-            name="answer"
-            id="answer"
-            className="pl-3 resize-none block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-0 sm:py-1.5 sm:text-md sm:leading-6"
-            placeholder="Answer"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !isShifted) {
-                props.sendMessage({
-                  SendChat: message,
-                });
-                setMessage("");
-              }
-              if (e.key === "Shift") {
-                setIsShifted(true);
-              }
-            }}
-            onKeyUp={(e) => {
-              if (e.key === "Shift") {
-                setIsShifted(false);
-              }
-            }}
-          />
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            onClick={() => {
-              props.sendMessage({
-                SendChat: message,
-              });
-              setMessage("");
-            }}
-          >
-            Send
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
