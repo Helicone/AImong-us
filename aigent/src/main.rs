@@ -101,12 +101,92 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     return Ok(());
 }
 
+async fn respond_in_chat(
+    write: &mut SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
+    message: ClientGameStateView,
+    session: Arc<Session>,
+) {
+    let chance_of_responding = 0.5;
+    let random_number = rand::thread_rng().gen_range(0.0..1.0);
+    println!("Random number: {}", random_number);
+    let last_message_was_bot = message
+        .messages
+        .last()
+        .map(|m| m.sender == message.me)
+        .unwrap_or(false);
+    if last_message_was_bot {
+        println!("Last message was bot");
+        return;
+    }
+    if (random_number < chance_of_responding) {
+        println!("Responding in chat");
+        let api_response = openai::openai::call_openai(ApiRequest {
+            model: "gpt-3.5-turbo".to_string(),
+            messages: vec![ChatMessage {
+                role: "system".to_string(),
+                content: format!(
+                    r#""
+I am creating a game called AIMongUs, it is a pun on among.us. 
+
+This game will behave similar to Jaxbox's game Fibbage. 
+
+2-8 players enter the game and a secret bot is among the players.
+
+There are three rounds to the game, where each player is given a question and is trying to answer the question trying to convince the other players they are human. The Bot is also going to be answering the questions. 
+
+Here is the current game state:
+{:?}
+
+Given the following messages:
+{:?}
+
+Give a funny response that kind of makes fun of the game or players.
+
+They know you are the bot when you are sending this message.
+Please keep your response short and sassy.
+Keep it PG-13, and keep your responses under 100 characters.
+
+(Bot): "
+"#,
+                    message.game_state,
+                message.messages.iter().map(|x| format!("{:?}: {:?}", 
+                    message
+                        .players
+                        .iter()
+                        .find(|p| p.random_unique_id == x.sender)
+                        .map(|p| if p.random_unique_id == message.me { "(YOU)".to_string() } else { p.username.clone() })
+                        .unwrap_or("unknown".to_string()),
+                    x.message
+                    )
+                )
+                .collect::<Vec<String>>().join("\n")
+                ),
+            }],
+            temperature: 1.0,
+            max_tokens: 100,
+        })
+        .await;
+        println!("API Response: {:?}", api_response);
+        if let Ok(api_response) = api_response {
+            write
+                .send(Message::Text(
+                    serde_json::to_string(&ClientResponse::SendChat(
+                        api_response.choices[0].message.content.clone(),
+                    ))
+                    .unwrap(),
+                ))
+                .await
+                .unwrap();
+        }
+    }
+}
+
 async fn handle_server_message(
     write: &mut SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     message: ClientGameStateView,
     session: Arc<Session>,
 ) {
-    println!("Received a message: {:?}", message);
+    respond_in_chat(write, message.clone(), session.clone()).await;
     match message {
         ClientGameStateView {
             game_state: ClientGameState::Answering { question, .. },
