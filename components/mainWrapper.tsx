@@ -1,8 +1,5 @@
 import { ClientGameState } from "../aimongus_types/bindings/ClientGameState";
 import { ClientGameStateView } from "../aimongus_types/bindings/ClientGameStateView";
-import { NUM_QUESTIONS_PER_GAME } from "../lib/constants";
-import StarBackground from "./games/aimongus/star";
-import Star from "./games/aimongus/star";
 import { Col } from "./layout/col";
 
 interface MainWrapperProps {
@@ -83,7 +80,7 @@ export function MainWrapper(props: MainWrapperProps) {
         {game && game?.game_state.state !== "Lobby" && (
           <h2 className="flex flex-row justify-between w-full py-2 border-b px-5 items-center bg-black text-white ">
             <div>
-              Turn {game?.current_turn} / {NUM_QUESTIONS_PER_GAME}
+              Turn {game?.current_turn} / {game?.turn_count}
             </div>
             <GameHeader {...props} />
             <div>{game?.number_of_players} players</div>

@@ -1,12 +1,7 @@
-import { ClientGameState } from "../aimongus_types/bindings/ClientGameState";
-import { ClientGameStateView } from "../aimongus_types/bindings/ClientGameStateView";
-import { NUM_QUESTIONS_PER_GAME } from "../lib/constants";
 import { GameStateProps } from "../pages/game";
 import { Chat } from "./chat";
-import Star from "./games/aimongus/star";
-import { Col } from "./layout/col";
 
-import React, { useState } from "react";
+import React from "react";
 
 export function GameIslandWrapper(
   props: GameStateProps<any> & { children: React.ReactNode }
