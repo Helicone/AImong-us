@@ -1,6 +1,13 @@
+import clsx from "clsx";
 import { GameStateProps } from "../pages/game";
 
 import { useState } from "react";
+import {
+  INPUT_CLASSNAME,
+  PRIMARY_BUTTON_CLASSNAME,
+} from "../lib/common-classes";
+import { Col } from "./layout/col";
+import { Row } from "./layout/row";
 
 export function Chat(props: GameStateProps<any>) {
   const [message, setMessage] = useState("");
@@ -11,18 +18,18 @@ export function Chat(props: GameStateProps<any>) {
       ?.username;
   }
   return (
-    <div className="flex flex-col h-full justify-end pb-2">
+    <Col className="justify-end p-4 h-[70vh] w-80 bg-violet-950 rounded-2xl ">
       {msgs.map((msg, i) => (
-        <div key={i} className="whitespace-pre-wrap overflow-auto break-all">
+        <div key={i} className="overflow-auto">
           {getPlayerUserName(msg.sender)}: {msg.message}
         </div>
       ))}
-      <div className="flex flex-row max-w-md gap-2">
+      <Row className="gap-2">
         <textarea
           rows={1}
           name="answer"
           id="answer"
-          className="pl-3 resize-none block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-0 sm:py-1.5 sm:text-md sm:leading-6"
+          className={clsx("resize-none block w-full", INPUT_CLASSNAME)}
           placeholder="Chat"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -45,7 +52,7 @@ export function Chat(props: GameStateProps<any>) {
           }}
         />
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className={PRIMARY_BUTTON_CLASSNAME}
           onClick={() => {
             props.sendMessage({
               SendChat: message,
@@ -55,7 +62,7 @@ export function Chat(props: GameStateProps<any>) {
         >
           Send
         </button>
-      </div>
-    </div>
+      </Row>
+    </Col>
   );
 }

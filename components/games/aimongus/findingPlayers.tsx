@@ -6,7 +6,8 @@ import searching from "../../../public/lottie/finding.json";
 import { Col } from "../../layout/col";
 import { Row } from "../../layout/row";
 import { CgRowLast } from "react-icons/cg";
-
+import { PRIMARY_BUTTON_CLASSNAME } from "../../../lib/common-classes";
+import clsx from "clsx";
 
 function FindingPlayersHost(props: GameStateProps<"Lobby">) {
   const { game, sendMessage } = props;
@@ -18,7 +19,22 @@ function FindingPlayersHost(props: GameStateProps<"Lobby">) {
         } joined`;
 
   return (
-    <Col className="h-full items-center gap-6">
+    <Col className="h-full items-center gap-6 relative">
+      {game && (
+        <button
+          className={clsx(PRIMARY_BUTTON_CLASSNAME, "absolute right-0 top-4")}
+          onClick={() => {
+            navigator.clipboard.writeText(
+              "http://localhost:3000/game?room_id=" + game.room_code
+            );
+          }}
+        >
+          <div className="flex flex-col">
+            <div className="text-sm">Room Code</div>
+            <div className="text-2xl font-bold">{game.room_code}</div>
+          </div>
+        </button>
+      )}
       <div className="text-sm right-0 bottom-0">{playerText}</div>
 
       {game.game_state.content.is_host ? (

@@ -10,6 +10,7 @@ import { EMOJIS } from "../lib/emojis";
 import { useRouter } from "next/router";
 import { Col } from "../components/layout/col";
 import { ProfilePicker } from "../components/games/aimongus/profile-picker";
+import { INPUT_CLASSNAME } from "../lib/common-classes";
 
 export default function Home() {
   return (
@@ -61,7 +62,7 @@ export function JoiningGame() {
           <input
             type="text"
             placeholder="Game ID"
-            className="border-2 border-transparent bg-violet-900 w-full rounded-md focus:outline-none focus:border-pink-500 px-4 py-2"
+            className={INPUT_CLASSNAME}
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
           />

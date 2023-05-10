@@ -51,7 +51,7 @@ function GameIsolateChannel({
       <div>
         <MainWrapper title="AImong Us" game={gameState}>
           <GameIslandWrapper game={gameState} sendMessage={sendMessage}>
-            <GameState game={gameState as any} sendMessage={sendMessage} />
+          <GameState game={gameState as any} sendMessage={sendMessage} />
           </GameIslandWrapper>
         </MainWrapper>
       </div>

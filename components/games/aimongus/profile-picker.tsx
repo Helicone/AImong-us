@@ -8,6 +8,7 @@ import { Col } from "../../layout/col";
 import { Row } from "../../layout/row";
 import { Modal } from "../../modal";
 import { TinyLabel } from "../../tinylabel";
+import { INPUT_CLASSNAME } from "../../../lib/common-classes";
 
 export function ProfilePicker(props: {
   selectedEmoji: string | null;
@@ -42,7 +43,7 @@ export function ProfilePicker(props: {
         <input
           type="text"
           placeholder="Username"
-          className="border-2 border-transparent bg-violet-900 w-full rounded-md focus:outline-none focus:border-pink-500 px-4 py-2"
+          className={INPUT_CLASSNAME}
           value={username}
           onChange={(e) =>
             e.target.value.length < 10 && setUsername(e.target.value)

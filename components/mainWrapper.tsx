@@ -49,33 +49,9 @@ export function MainWrapper(props: MainWrapperProps) {
   const { children, title, game } = props;
   return (
     <main className="w-screen h-screen bg-black">
-      <div className="z-10">
+      <div className="z-10 text-white">
         <h1 className="text-center w-full py-2 px-5 z-10 bg-violet-950">
-          <div className="">
-            <div className="flex md:flex-row w-full justify-between items-center">
-              <div className="text-center w-full"></div>
-              <div className="text-center w-full text-md font-mono text-white">
-                AImong.us
-              </div>
-              <div className="w-full text-right">
-                {game && (
-                  <button
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        "http://localhost:3000/game?room_id=" + game.room_code
-                      );
-                    }}
-                  >
-                    <div className="flex flex-col">
-                      <div className="text-sm">Room Code</div>
-                      <div className="text-2xl">{game.room_code}</div>
-                    </div>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          <div className="text-center w-full text-md font-mono">AImong.us</div>
         </h1>
         {game && game?.game_state.state !== "Lobby" && (
           <h2 className="flex flex-row justify-between w-full py-2 border-b px-5 items-center bg-black text-white ">

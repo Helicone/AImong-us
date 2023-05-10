@@ -11,6 +11,8 @@ import { Row } from "../../layout/row";
 import { CgDice5 } from "react-icons/cg";
 import Lottie from "react-lottie";
 import searching from "../../../public/lottie/little-robot.json";
+import { PRIMARY_BUTTON_CLASSNAME } from "../../../lib/common-classes";
+import clsx from "clsx";
 export default function Lobby() {
   const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useLocalStorage<string>(
@@ -56,7 +58,7 @@ export default function Lobby() {
         />
         <Row className="gap-3">
           <button
-            className="bg-violet-600 text-white px-4 py-2 rounded-md hover:bg-violet-500 focus:outline-none focus:ring-2 transition-colors w-1/2"
+            className={clsx(PRIMARY_BUTTON_CLASSNAME, "w-1/2")}
             onClick={() => {
               console.log("joining game");
               router.push("/joining-game");
