@@ -91,10 +91,8 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
           />
         </div>
       ))}
-      Number of players ready:{" "}
-      {game.game_state.content.number_of_players_ready ?? 0} /{" "}
-      {game.number_of_players}
-      <div>
+
+      <div className="flex flex-col items-center w-full gap-2">
         <button
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => {
@@ -103,6 +101,10 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
         >
           Ready for next turn
         </button>
+        <div>
+          Players ready: {game.game_state.content.number_of_players_ready ?? 0}{" "}
+          / {game.number_of_players}
+        </div>
       </div>
     </div>
   );

@@ -28,6 +28,7 @@ export function Chat(props: GameStateProps<any>) {
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !isShifted) {
+              e.preventDefault();
               props.sendMessage({
                 SendChat: message,
               });

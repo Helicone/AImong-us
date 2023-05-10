@@ -67,12 +67,12 @@ export function AnswerCardResult(props: AnswerPropsResult) {
 
   const percentagePoints = Math.round((player.score / (maxPoints ?? 0)) * 100);
   return (
-    <div className="relative">
+    <div className="relative ">
       {!isBot && (
         <div>
           <div
             className={clsx(
-              "flex flex-row justify-start items-center border-2 p-2 w-full gap-2 text-sm rounded-t-xl",
+              "flex flex-row justify-start items-center border-2 p-2 w-full gap-2 text-sm rounded-t-xl bg-white",
               "text-gray-300"
             )}
           >
@@ -90,7 +90,7 @@ export function AnswerCardResult(props: AnswerPropsResult) {
           </div>
           <div
             className={clsx(
-              "flex flex-row justify-start items-center border-l-2 border-r-2 p-2 w-full gap-2 text-sm",
+              "flex flex-row justify-start items-center border-l-2 border-r-2 p-2 w-full gap-2 text-sm bg-white",
               "text-gray-300"
             )}
           >
@@ -108,11 +108,8 @@ export function AnswerCardResult(props: AnswerPropsResult) {
       )}
       <div
         className={clsx(
-          `flex flex-col items-center justify-center w-full  p-5 border rounded-b-xl d`,
-          isBot && "rounded-t-xl",
-          canClick
-            ? "cursor-pointer hover:bg-gray-200 shadow-sm"
-            : "bg-gray-200"
+          `flex flex-col items-center justify-center w-full  p-5 border rounded-b-xl bg-white`,
+          isBot && "rounded-t-xl"
         )}
       >
         <div className="flex flex-row justify-start w-full items-center gap-3">

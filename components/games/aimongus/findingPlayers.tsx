@@ -90,13 +90,7 @@ function FindingPlayersPlayer(props: GameStateProps<"Lobby">) {
         />
       </Row>
       <div className="text-xl"></div>
-      <div className="text-xl">Waiting for host to start game</div>
-
-      <div className="text-sm right-0 bottom-0">
-        {game.number_of_players} / {NUM_PLAYERS}
-      </div>
-
-      <div>Chat box would go here</div>
+      <div className="text-xl text-center">Waiting for host to start game</div>
     </Col>
   );
 }
@@ -108,19 +102,7 @@ function Wrapper(
 ) {
   const { game, sendMessage } = props;
 
-  return (
-    <div>
-      <div>
-        {game.players.map((player, i) => (
-          <div key={i}>
-            {player.emoji}
-            {player.username} {player.is_host ? "(host)" : ""}
-          </div>
-        ))}
-      </div>
-      {props.children}
-    </div>
-  );
+  return <div>{props.children}</div>;
 }
 
 export default function FindingPlayers(props: GameStateProps<"Lobby">) {
@@ -135,7 +117,7 @@ export default function FindingPlayers(props: GameStateProps<"Lobby">) {
   } else {
     return (
       <Wrapper {...props}>
-        <FindingPlayersPlayer {...props} />{" "}
+        <FindingPlayersPlayer {...props} />
       </Wrapper>
     );
   }
