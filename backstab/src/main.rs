@@ -34,6 +34,60 @@ const VOTING_TIMEOUT_SECS: u32 = 10;
 const MS_BETWEEN_CHAT_MESSAGES: u128 = 500;
 const POINTS_FOR_CORRECT_GUESS: u32 = 1000;
 const POINTS_FOR_NOT_BEING_GUESSED: u32 = 200;
+const RANDOM_QUESTIONS_LEN: usize = 51;
+const RANDOM_QUESTIONS: [&str; RANDOM_QUESTIONS_LEN] = [
+    "What's your favorite color?",
+    "Have you ever eaten something really weird?",
+    "What's your favorite TV show?",
+    "Do you have any pets?",
+    "What's the worst job you've ever had?",
+    "Have you ever been on a rollercoaster?",
+    "What's your favorite food?",
+    "Have you ever traveled to another country?",
+    "Do you like sports?",
+    "What's the best prank you've ever pulled on someone?",
+    "Have you ever gone bungee jumping?",
+    "What's your favorite book?",
+    "Do you prefer the beach or the mountains?",
+    "What's your favorite movie?",
+    "Have you ever gone camping?",
+    "What's your favorite season?",
+    "Do you have any siblings?",
+    "What's your favorite video game?",
+    "Have you ever gone skydiving?",
+    "What's your favorite animal?",
+    "Do you believe in aliens?",
+    "What's your favorite type of music?",
+    "Have you ever broken a bone?",
+    "What's your favorite hobby?",
+    "Do you like spicy food?",
+    "What's your favorite board game?",
+    "Have you ever gone on a road trip?",
+    "What's your favorite holiday?",
+    "Do you have a favorite superhero?",
+    "What's your favorite ice cream flavor?",
+    "Have you ever gone scuba diving?",
+    "What's your favorite hobby?",
+    "Do you have any tattoos?",
+    "What's your favorite dessert?",
+    "Have you ever gone on a blind date?",
+    "What's your favorite TV series?",
+    "What's your favorite book?",
+    "Do you have any phobias?",
+    "What's your dream job?",
+    "Have you ever been on a cruise?",
+    "What's your favorite video game?",
+    "Do you have a favorite sports team?",
+    "What's the worst injury you've ever had?",
+    "Have you ever won a contest?",
+    "What's your favorite type of cuisine?",
+    "Do you prefer coffee or tea?",
+    "What's your favorite outdoor activity?",
+    "Have you ever gone skiing or snowboarding?",
+    "What's your favorite type of candy?",
+    "Do you have any hidden talents?",
+    "What's your favorite social media platform?",
+];
 
 impl std::fmt::Display for RoomCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -132,15 +186,21 @@ struct Turn {
 }
 
 impl Turn {
-    fn new() -> Self {
+    fn new(question: Option<&String>) -> Self {
+        let question = if let Some(question) = question {
+            question.clone()
+        } else {
+            RANDOM_QUESTIONS[rand::thread_rng().gen_range(0..RANDOM_QUESTIONS_LEN)].to_string()
+        };
+
         Self {
-            question: "How many TODOs could a TODO do if a TODO could do TODOs?".to_string(),
             started_at: std::time::SystemTime::now(),
             voting_started_at: None,
             reviewing_started_at: None,
             answers: HashMap::new(),
             votes: HashMap::new(),
             ready_for_next_turn: HashSet::new(),
+            question,
         }
     }
 
@@ -213,6 +273,7 @@ struct Session {
     players: Vec<Player>,
     broadcast: async_broadcast::Sender<ServerMessage>,
     turns: Vec<Turn>,
+    questions: Vec<String>,
     stage: GameStage,
     aikey: SessionId,
     messages: Vec<ChatMessage>,
@@ -315,6 +376,7 @@ impl Session {
                 stage: GameStage::NotStarted,
                 aikey: SessionId::new(),
                 messages: vec![],
+                questions: vec![],
             },
             receiver,
         )
@@ -772,6 +834,23 @@ async fn handle_client_message(
 ) {
     println!("client message: {:?}", message);
     let broadcast = match message {
+        ClientResponse::SetQuestions(questions) => {
+            let mut locked_session = session.lock().unwrap();
+            if !matches!(locked_session.stage, GameStage::NotStarted) {
+                // TODO send an error instead of silently exiting
+                return;
+            }
+            if locked_session.creator_identity != identity {
+                // TODO only creator can start game
+                return;
+            }
+            locked_session.stage = GameStage::Answering;
+            locked_session.questions = questions;
+            let async_session = Arc::clone(&session);
+            let turn_number = locked_session.turns.len() - 1;
+            locked_session.broadcast.clone()
+        }
+
         ClientResponse::StartGame => {
             let mut locked_session = session.lock().unwrap();
             if !matches!(locked_session.stage, GameStage::NotStarted) {
@@ -783,7 +862,8 @@ async fn handle_client_message(
                 return;
             }
             locked_session.stage = GameStage::Answering;
-            locked_session.turns.push(Turn::new());
+            let turn = Turn::new(locked_session.questions.last());
+            locked_session.turns.push(turn);
             let async_session = Arc::clone(&session);
             let turn_number = locked_session.turns.len() - 1;
             tokio::task::spawn(async move {
@@ -879,7 +959,9 @@ async fn handle_client_message(
             if (ready_count as f32) / locked_session.player_count() as f32 >= 0.5 {
                 let turn_number = locked_session.turns.len();
                 locked_session.stage = GameStage::Answering;
-                locked_session.turns.push(Turn::new());
+
+                let turn = Turn::new(locked_session.questions.last());
+                locked_session.turns.push(turn);
                 let async_session = Arc::clone(&session);
                 tokio::task::spawn(async move {
                     tokio::time::sleep(tokio::time::Duration::from_secs(
