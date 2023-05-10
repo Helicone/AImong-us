@@ -70,7 +70,7 @@ export function JoiningGame() {
           </div>
         </Col>
         <button
-          className="bg-violet-600 text-white px-4 py-2 rounded-md hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-purple-500 w-full disabled:bg-slate-500 disabled:cursor-not-allowed transition-colors"
+          className="bg-violet-600 text-white px-4 py-2 rounded-md hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-purple-500 w-full disabled:bg-slate-500 disabled:cursor-not-allowed transition-colors mt-4"
           disabled={
             !roomId || roomId.length < 4 || !username || username.length < 1
           }

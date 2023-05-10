@@ -1,17 +1,16 @@
 import Head from "next/head";
 import { MainWrapper } from "../components/mainWrapper";
 
-import Lobby from "../components/games/aimongus/lobby";
-import StarBackground from "../components/games/aimongus/star";
-import JoiningGame, {
-  ProfilePicker,
-} from "../components/games/aimongus/profile-picker";
-import { useLocalStorage } from "../lib/hooks/useLocalStorage";
-import { useState } from "react";
-import { PLAYER_NAMES } from "../lib/constants";
 import { useRouter } from "next/router";
-import { EMOJIS } from "../lib/emojis";
+import { useState } from "react";
+import { ProfilePicker } from "../components/games/aimongus/profile-picker";
+import StarBackground from "../components/games/aimongus/star";
 import { Col } from "../components/layout/col";
+import { PLAYER_NAMES } from "../lib/constants";
+import { EMOJIS } from "../lib/emojis";
+import { useLocalStorage } from "../lib/hooks/useLocalStorage";
+import { Toggle } from "../components/toggle";
+import { TinyLabel } from "../components/tinylabel";
 
 export default function Home() {
   return (
@@ -60,8 +59,13 @@ export function CreatingGame() {
           username={username}
           setUsername={setUsername}
         />
+        <Col className="gap-1 text-left">
+          <Toggle onChange={() => {}} />
+          <TinyLabel text="Public" />
+        </Col>
+
         <button
-          className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-500"
+          className="bg-teal-600 text-white px-6 py-2 mt-4 rounded-md hover:bg-teal-500"
           onClick={() => {
             console.log("play AImong Us");
             router.push(
