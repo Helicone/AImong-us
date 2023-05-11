@@ -17,9 +17,7 @@ export default function Voting(props: GameStateProps<"Voting">) {
     <div className="flex flex-col gap-20">
       <div className="flex flex-col col-span-2 gap-5 items-center">
         <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
-          <div className="max-w-lg bg-white  p-5 rounded-lg bg-">
-            {currentQuestion}
-          </div>
+          <div className="max-w-lg p-5 rounded-lg bg-">{currentQuestion}</div>
         </div>
         <div className="flex flex-col max-w-md gap-10">
           {Object.entries(game.game_state.content.answers).map(

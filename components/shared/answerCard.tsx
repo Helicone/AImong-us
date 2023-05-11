@@ -18,8 +18,8 @@ export function AnswerCard(props: AnswerProps) {
         className={clsx(
           `flex flex-col items-center justify-center w-full  p-5 border rounded-xl d`,
           canClick
-            ? "cursor-pointer hover:bg-gray-200 shadow-sm"
-            : "bg-gray-200"
+            ? "cursor-pointer hover:bg-violet-700 shadow-sm"
+            : "bg-violet-800"
         )}
         onClick={() => canClick && onClick && onClick()}
       >
@@ -72,7 +72,7 @@ export function AnswerCardResult(props: AnswerPropsResult) {
         <div>
           <div
             className={clsx(
-              "flex flex-row justify-start items-center border-2 p-2 w-full gap-2 text-sm rounded-t-xl bg-white",
+              "flex flex-row justify-start items-center border-2 p-2 w-full gap-2 text-sm rounded-t-xl bg-violet-900",
               "text-gray-300"
             )}
           >
@@ -90,7 +90,7 @@ export function AnswerCardResult(props: AnswerPropsResult) {
           </div>
           <div
             className={clsx(
-              "flex flex-row justify-start items-center border-l-2 border-r-2 p-2 w-full gap-2 text-sm bg-white",
+              "flex flex-row justify-start items-center border-l-2 border-r-2 p-2 w-full gap-2 text-sm bg-violet-900",
               "text-gray-300"
             )}
           >
@@ -108,7 +108,7 @@ export function AnswerCardResult(props: AnswerPropsResult) {
       )}
       <div
         className={clsx(
-          `flex flex-col items-center justify-center w-full  p-5 border rounded-b-xl bg-white`,
+          `flex flex-col items-center justify-center w-full  p-5 border rounded-b-xl bg-violet-900`,
           isBot && "rounded-t-xl"
         )}
       >

@@ -14,17 +14,53 @@ export function Chat(props: GameStateProps<any>) {
   const [message, setMessage] = useState("");
   const [isShifted, setIsShifted] = useState(false);
   const msgs = props.game.messages;
-  function getPlayerUserName(id: number) {
-    return props.game.players.find((player) => player.random_unique_id === id)
-      ?.username;
+  function getPlayer(id: number) {
+    return props.game.players.find((player) => player.random_unique_id === id);
   }
   return (
     <Col className="justify-end p-4 h-[70vh] w-80 bg-violet-950 rounded-2xl ">
-      {msgs.map((msg, i) => (
-        <div key={i} className="overflow-auto">
-          {getPlayerUserName(msg.sender)}: {msg.message}
-        </div>
-      ))}
+      <Col className="gap-1 h-full overflow-auto pb-10">
+        {msgs.map((msg, i) => {
+          const player = getPlayer(msg.sender);
+          if (player?.random_unique_id === props.game.me) {
+            return (
+              <Row className="items-center gap-2 w-full justify-end" key={i}>
+                <div className="bg-blue-800 rounded-lg rounded-br-none py-2 px-4">
+                  {msg.message}
+                </div>
+                {/* <div className="text-xl">{player?.emoji}</div> */}
+              </Row>
+            );
+          }
+          const isNextSame = msgs[i + 1]?.sender === msg.sender;
+          return (
+            <Row className="items-center gap-2" key={i}>
+              <Col className="h-full justify-end">
+                {isNextSame ? (
+                  <div className="w-9"></div>
+                ) : (
+                  <>
+                    <Col className="text-xl rounded-full h-9 w-9 bg-blue-500 justify-center items-center mb-5">
+                      {player?.emoji}
+                    </Col>
+                  </>
+                )}
+              </Col>
+              <Col className="gap-1">
+                <div className="bg-slate-700 rounded-lg rounded-bl-none py-2 px-4">
+                  {msg.message}
+                </div>
+                {!isNextSame && (
+                  <div className="text-xs text-slate-400">
+                    {" "}
+                    {player?.username}
+                  </div>
+                )}
+              </Col>
+            </Row>
+          );
+        })}
+      </Col>
       <Row className="gap-2">
         <textarea
           rows={1}

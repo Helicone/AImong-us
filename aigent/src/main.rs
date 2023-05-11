@@ -106,7 +106,7 @@ async fn respond_in_chat(
     message: ClientGameStateView,
     session: Arc<Session>,
 ) {
-    let chance_of_responding = 0.5;
+    let chance_of_responding = 0.75;
     let random_number = rand::thread_rng().gen_range(0.0..1.0);
     println!("Random number: {}", random_number);
     let last_message_was_bot = message
@@ -147,7 +147,7 @@ They know you are the bot when you are sending this message.
 Please keep your response short and sassy.
 Keep it PG-13, and keep your responses under 100 characters.
 
-Please give me a response for the bot to say
+Please give me a response for the bot to say give the messages above.
 "#,
                     message.game_state,
                     message.players,
@@ -212,13 +212,13 @@ There are three rounds to the game, where each player is given a question and is
 I will ask you a question and you are to respond in the most convincing way that you are a human. Do things extremely human-like, such as using bad grammar and casual conversation like "lol". Also, try to play dumb.
 
 Here are your attributes:
-Bot Name:  Valley Girl
-Your name: Jessica
+Bot Name:  Young adult in their 20s
+Your name: Alex
 
 Rules:
 - Keep your answer below 160 character
 
-You are now Jessica.
+You are now Alex.
 
 
 Here is the question from the server:

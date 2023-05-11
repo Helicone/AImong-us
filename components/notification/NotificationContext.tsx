@@ -6,15 +6,18 @@ type NotificationVariants = "success" | "info" | "error";
 interface NotificationContextProps {
   variant: NotificationVariants;
   title: string;
+  description: string;
   setNotification: (_: {
     title: string;
     variant: NotificationVariants;
+    description?: string;
   }) => void;
 }
 
 const NotificationContext = createContext<NotificationContextProps>({
   variant: "success",
   title: "",
+  description: "",
   setNotification: () => {},
 });
 
@@ -25,24 +28,26 @@ interface NotificationProviderProps {
 export const NotificationProvider = (props: NotificationProviderProps) => {
   const { children } = props;
   const [title, setTitle] = useState("");
-  // const [description, setDescription] = useState("");
   const [variant, setVariant] = useState<NotificationVariants>("success");
+  const [description, setDescription] = useState("");
 
   const setNotification = ({
     title,
     variant,
+    description = "",
   }: {
     title: string;
     variant: NotificationVariants;
+    description?: string;
   }) => {
     console.log("setNotification", title, variant);
     setTitle(title);
-    // setDescription(description);
+    setDescription(description);
     setVariant(variant);
 
     setTimeout(() => {
       setTitle("");
-      // setDescription("");
+      setDescription("");
       setVariant("success");
     }, ALERT_TIME);
   };
@@ -51,7 +56,7 @@ export const NotificationProvider = (props: NotificationProviderProps) => {
     <NotificationContext.Provider
       value={{
         title,
-        // description,
+        description,
         variant,
         setNotification,
       }}
