@@ -73,9 +73,7 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
         )}
       </div>
       <div className="text-xl font-semibold font-mono w-full flex flex-col items-center text-center">
-        <div className="max-w-lg bg-white  p-5 rounded-lg bg-">
-          {currentQuestion}
-        </div>
+        <div className="max-w-lg   p-5 rounded-lg bg-">{currentQuestion}</div>
       </div>
       <AnswerCardResult
         answer={botResult.answer}
