@@ -83,7 +83,7 @@ export function JoiningGame() {
         <button
           className={clsx(PINK_BUTTON, BASE_BUTTON_CLASSNAME, "w-full")}
           disabled={
-            !roomId || roomId.length < 4 || !username || username.length < 1
+            !roomId || roomId.length != 4 || !username || username.length < 1
           }
           onClick={() => {
             console.log("play AImong Us");
