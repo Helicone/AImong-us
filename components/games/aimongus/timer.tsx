@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { Row } from "../../layout/row";
 import clsx from "clsx";
 
-export function Timer(props: { totalTime: number; timeStarted: number }) {
-  const { totalTime, timeStarted } = props;
+export function Timer(props: {
+  totalTime: number;
+  timeStarted: number;
+  className?: string;
+}) {
+  const { totalTime, timeStarted, className } = props;
   const [timeLeft, setTimeLeft] = useState(totalTime);
 
   useEffect(() => {
@@ -17,7 +21,12 @@ export function Timer(props: { totalTime: number; timeStarted: number }) {
   percentage = Math.max(0, Math.min(100, percentage));
 
   return (
-    <Row className="flex flex-row w-full bg-slate-600 justify-start">
+    <Row
+      className={clsx(
+        "flex flex-row w-full bg-slate-600 justify-start rounded-b overflow-hidden",
+        className
+      )}
+    >
       <div
         className={clsx(
           percentage > 30

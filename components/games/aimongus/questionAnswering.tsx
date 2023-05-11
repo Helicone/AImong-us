@@ -27,45 +27,45 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
   }
 
   return (
-    <Col className="h-full justify-between">
-      <Col className="flex flex-col col-span-2 gap-6 text-left">
-        <div className="font-mono">Question {game.current_turn}</div>
-        <div className="text-2xl font-semibold">{currentQuestion}</div>
-        <Col className="gap-1">
-          <textarea
-            rows={5}
-            name="answer"
-            id="answer"
-            className={clsx(INPUT_CLASSNAME)}
-            placeholder="Answer. Try to convince people you are NOT a bot!"
-            value={answer}
-            onChange={(e) => {
-              if (e.target.value.length > MAX_LENGTH_ANSWER) return;
-              setAnswer(e.target.value);
-            }}
-          />
-          <Row className="w-full justify-end text-sm text-slate-500">
-            {answer.length}/{MAX_LENGTH_ANSWER}
-          </Row>
-        </Col>
+    <Col className="h-full gap-6">
+      <div className="font-mono">Question {game.current_turn}</div>
+      <div className="text-2xl font-semibold">{currentQuestion}</div>
+      <Col className="gap-1 flex-grow">
+        <textarea
+          name="answer"
+          id="answer"
+          className={clsx(INPUT_CLASSNAME, "flex flex-grow")}
+          placeholder="Answer. Try to convince people you are NOT a bot!"
+          value={answer}
+          onChange={(e) => {
+            if (e.target.value.length > MAX_LENGTH_ANSWER) return;
+            setAnswer(e.target.value);
+          }}
+        />
+        <Row className="w-full justify-end text-sm text-slate-500">
+          {answer.length}/{MAX_LENGTH_ANSWER}
+        </Row>
       </Col>
-      <Timer
-        totalTime={game.game_state.content.allowed_time * ms}
-        timeStarted={new Date(
-          Number(game.game_state.content.started_at)
-        ).getTime()}
-      />
-      <button
-        disabled={answer.length === 0}
-        className={clsx(VIOLET_BUTTON, BASE_BUTTON_CLASSNAME)}
-        onClick={() => {
-          sendMessage({
-            SubmitAnswer: answer,
-          });
-        }}
-      >
-        Submit Answer
-      </button>
+      <Col className="relative">
+        <button
+          disabled={answer.length === 0}
+          className={clsx(VIOLET_BUTTON, BASE_BUTTON_CLASSNAME)}
+          onClick={() => {
+            sendMessage({
+              SubmitAnswer: answer,
+            });
+          }}
+        >
+          Submit Answer
+        </button>
+        <Timer
+          totalTime={game.game_state.content.allowed_time * ms}
+          timeStarted={new Date(
+            Number(game.game_state.content.started_at)
+          ).getTime()}
+          className={"absolute bottom-0 w-full"}
+        />
+      </Col>
     </Col>
   );
 }
