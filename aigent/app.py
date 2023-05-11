@@ -11,8 +11,8 @@ async def run_cargo(room_id: str, aicode: str):
     # Execute the binary on each HTTP request
     binary_path = "target/release/aigent"  
     
-    # Timeout after 20 minutes
-    cmd = f"timeout 1200 {binary_path} {room_id} {aicode}"
+    # Timeout after 
+    cmd = f"timeout 60000 {binary_path} {room_id} {aicode}"
     subprocess.Popen(cmd, shell=True)
     return {"message": "Process started", "room_id": room_id, "aicode": aicode}
 
