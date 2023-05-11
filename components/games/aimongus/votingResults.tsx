@@ -1,4 +1,5 @@
 import { GameStateProps } from "../../../pages/game";
+import { Col } from "../../layout/col";
 import { AnswerCard, AnswerCardResult } from "../../shared/answerCard";
 
 interface AnswerProps {
@@ -59,12 +60,19 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
 
   const maxPoints = Math.max(...game.players.map((player) => player.score));
 
+  const winner = game.players.find((player) => player.score === maxPoints);
+
   return (
-    <div className="flex flex-col col-span-2 gap-5">
+    <Col className=" gap-5 justify-between h-full">
       <div>
         {game.game_state.content.is_game_over ? (
           <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
             Game over!
+            {winner && (
+              <div>
+                {winner.emoji} {winner.username} wins!
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
@@ -75,24 +83,25 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
       <div className="text-xl font-semibold font-mono w-full flex flex-col items-center text-center">
         <div className="max-w-lg   p-5 rounded-lg bg-">{currentQuestion}</div>
       </div>
-      <AnswerCardResult
-        answer={botResult.answer}
-        isBot
-        player={getPlayer(botResult.answerer)!}
-        playersWhoVoted={
-          botResult.players_who_voted
-            .map(getPlayer)
-            .filter((player) => player !== null) as Player[]
-        }
-      />
-      {playerAnswers
-        .map((answer) => ({
-          ...answer,
-          player: getPlayer(answer.answerer)!,
-        }))
-        .sort((a, b) => b.player.score - a.player.score)
-        .map((result, i) => (
-          <div key={i}>
+
+      <Col className="gap-16">
+        <AnswerCardResult
+          answer={botResult.answer}
+          isBot
+          player={getPlayer(botResult.answerer)!}
+          playersWhoVoted={
+            botResult.players_who_voted
+              .map(getPlayer)
+              .filter((player) => player !== null) as Player[]
+          }
+        />
+        {playerAnswers
+          .map((answer) => ({
+            ...answer,
+            player: getPlayer(answer.answerer)!,
+          }))
+          .sort((a, b) => b.player.score - a.player.score)
+          .map((result, i) => (
             <AnswerCardResult
               answer={result.answer}
               player={result.player}
@@ -103,26 +112,27 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
                   .filter((player) => player !== null) as Player[]
               }
               points={result.points}
+              key={i}
             />
-          </div>
-        ))}
+          ))}
+      </Col>
       {!game.game_state.content.is_game_over && (
         <div className="flex flex-col items-center w-full gap-2">
+          <div>
+            Players ready:{" "}
+            {game.game_state.content.number_of_players_ready ?? 0} /{" "}
+            {game.number_of_players}
+          </div>
           <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="w-full bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded font-"
             onClick={() => {
               sendMessage("ReadyForNextTurn");
             }}
           >
             Ready for next turn
           </button>
-          <div>
-            Players ready:{" "}
-            {game.game_state.content.number_of_players_ready ?? 0} /{" "}
-            {game.number_of_players}
-          </div>
         </div>
       )}
-    </div>
+    </Col>
   );
 }
