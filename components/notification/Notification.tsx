@@ -18,7 +18,7 @@ export const Notification = () => {
   const [show, setShow] = useState(true);
 
   const variants = {
-    success: "bg-green-500",
+    success: "bg-violet-800",
     info: "bg-yellow-500",
     error: "bg-red-500",
   };

@@ -12,7 +12,7 @@ export function GameIslandWrapper(
   const msgs = props.game.messages;
   return (
     <Row className="w-full justify-center mx-auto z-10 gap-4">
-      <div className="w-full bg-violet-950 px-5 py-2 rounded-2xl max-w-lg">
+      <div className="w-full bg-violet-950 px-8 py-4 rounded-2xl max-w-lg">
         <div>{children}</div>
       </div>
       <div className="sm:inline-block hidden">

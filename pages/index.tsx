@@ -4,9 +4,9 @@ import { MainWrapper } from "../components/mainWrapper";
 
 import Lobby from "../components/games/aimongus/lobby";
 import useNotification from "../components/notification/useNotification";
+import StarBackground from "../components/games/aimongus/star";
 
 export default function Home() {
-  const { setNotification } = useNotification();
   return (
     <div>
       <Head>
@@ -16,17 +16,7 @@ export default function Home() {
       </Head>
       <MainWrapper title="AImong Us">
         <Lobby />
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded z-10"
-          onClick={() => {
-            setNotification({
-              title: "LIGMA",
-              variant: "success",
-            });
-          }}
-        >
-          LOOK NOTIFICATION
-        </button>
+        <StarBackground />
       </MainWrapper>
     </div>
   );

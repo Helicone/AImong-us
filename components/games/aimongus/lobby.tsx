@@ -1,37 +1,16 @@
-import EmojiPicker from "emoji-picker-react";
-
+import clsx from "clsx";
 import { useRouter } from "next/router";
-import { use, useEffect, useState } from "react";
-import { Modal } from "../../modal";
+import { useState } from "react";
+import Lottie from "react-lottie";
+import { PRIMARY_BUTTON_CLASSNAME } from "../../../lib/common-classes";
+import { PLAYER_NAMES } from "../../../lib/constants";
 import { EMOJIS } from "../../../lib/emojis";
 import { useLocalStorage } from "../../../lib/hooks/useLocalStorage";
-import { PLAYER_NAMES } from "../../../lib/constants";
+import searching from "../../../public/lottie/little-robot.json";
 import { Col } from "../../layout/col";
 import { Row } from "../../layout/row";
-import { CgDice5 } from "react-icons/cg";
-import Lottie from "react-lottie";
-import searching from "../../../public/lottie/little-robot.json";
-import { PRIMARY_BUTTON_CLASSNAME } from "../../../lib/common-classes";
-import clsx from "clsx";
 export default function Lobby() {
-  const [roomId, setRoomId] = useState("");
-  const [username, setUsername] = useLocalStorage<string>(
-    "user_name",
-    "",
-    (setStored) => {
-      setStored(PLAYER_NAMES[Math.floor(Math.random() * PLAYER_NAMES.length)]);
-    }
-  );
   const router = useRouter();
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [selectedEmoji, setSelectedEmoji] = useLocalStorage<string | null>(
-    "user_emoji",
-    null,
-    (setStored) => {
-      const randomEmoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
-      setStored(randomEmoji);
-    }
-  );
 
   return (
     <Col className="items-center w-full z-10">

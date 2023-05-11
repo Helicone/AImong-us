@@ -8,6 +8,8 @@ import { Row } from "../../layout/row";
 import { CgRowLast } from "react-icons/cg";
 import { PRIMARY_BUTTON_CLASSNAME } from "../../../lib/common-classes";
 import clsx from "clsx";
+import { MyClientGameStateView } from "../../../aimongus_types/bindings/ExtractClientState";
+import useNotification from "../../notification/useNotification";
 
 function FindingPlayersHost(props: GameStateProps<"Lobby">) {
   const { game, sendMessage } = props;
@@ -19,35 +21,23 @@ function FindingPlayersHost(props: GameStateProps<"Lobby">) {
         } joined`;
 
   return (
-    <Col className="h-full items-center gap-6 relative">
+    <Col className="h-full items-center gap-6 relative justify-between">
       {game && (
-        <button
-          className={clsx(PRIMARY_BUTTON_CLASSNAME, "absolute right-0 top-4")}
-          onClick={() => {
-            navigator.clipboard.writeText(
-              "http://localhost:3000/game?room_id=" + game.room_code
-            );
-          }}
-        >
-          <div className="flex flex-col">
-            <div className="text-sm">Room Code</div>
-            <div className="text-2xl font-bold">{game.room_code}</div>
-          </div>
-        </button>
+        <Row className={"w-full justify-end"}>
+          <RoomCodeButton game={game} />
+        </Row>
       )}
-      <div className="text-sm right-0 bottom-0">{playerText}</div>
+      <div className="text-sm min-h-[20rem]">{playerText}</div>
 
       {game.game_state.content.is_host ? (
-        <div className="text-xl">
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            onClick={() => {
-              sendMessage("StartGame");
-            }}
-          >
-            Start game
-          </button>
-        </div>
+        <button
+          className={clsx(PRIMARY_BUTTON_CLASSNAME, "w-full text-xl")}
+          onClick={() => {
+            sendMessage("StartGame");
+          }}
+        >
+          Start game
+        </button>
       ) : (
         <div className="text-xl">Waiting for host to start game</div>
       )}
@@ -86,6 +76,30 @@ function FindingPlayersPlayer(props: GameStateProps<"Lobby">) {
   );
 }
 
+function RoomCodeButton(props: { game: MyClientGameStateView<"Lobby"> }) {
+  const { game } = props;
+  const { setNotification } = useNotification();
+  return (
+    <button
+      className={clsx(PRIMARY_BUTTON_CLASSNAME)}
+      onClick={() => {
+        navigator.clipboard.writeText(
+          "http://localhost:3000/game?room_id=" + game.room_code
+        );
+        setNotification({
+          title: "Copied to clipboard",
+          variant: "success",
+        });
+      }}
+    >
+      <div className="flex flex-col">
+        <div className="text-sm">Room Code</div>
+        <div className="text-2xl font-bold">{game.room_code}</div>
+      </div>
+    </button>
+  );
+}
+
 function Wrapper(
   props: GameStateProps<"Lobby"> & {
     children: React.ReactNode;
@@ -93,7 +107,7 @@ function Wrapper(
 ) {
   const { game, sendMessage } = props;
 
-  return <div>{props.children}</div>;
+  return <>{props.children}</>;
 }
 
 export default function FindingPlayers(props: GameStateProps<"Lobby">) {
