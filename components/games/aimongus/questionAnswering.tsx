@@ -7,7 +7,7 @@ import { Col } from "../../layout/col";
 import {
   BASE_BUTTON_CLASSNAME,
   INPUT_CLASSNAME,
-  VIOLET_BUTTON,
+  PINK_BUTTON,
 } from "../../../lib/common-classes";
 import clsx from "clsx";
 import { Row } from "../../layout/row";
@@ -49,7 +49,7 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
       <Col className="relative">
         <button
           disabled={answer.length === 0}
-          className={clsx(VIOLET_BUTTON, BASE_BUTTON_CLASSNAME)}
+          className={clsx(PINK_BUTTON, BASE_BUTTON_CLASSNAME)}
           onClick={() => {
             sendMessage({
               SubmitAnswer: answer,

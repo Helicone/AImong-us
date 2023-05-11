@@ -1,18 +1,13 @@
-import { useState } from "react";
-import Lottie from "react-lottie";
-import { NUM_PLAYERS } from "../../../lib/constants";
-import { GameStateProps } from "../../../pages/game";
-import searching from "../../../public/lottie/finding.json";
-import { Col } from "../../layout/col";
-import { Row } from "../../layout/row";
-import { CgRowLast } from "react-icons/cg";
-import {
-  BASE_BUTTON_CLASSNAME,
-  TEAL_BUTTON,
-  VIOLET_BUTTON,
-} from "../../../lib/common-classes";
 import clsx from "clsx";
 import { MyClientGameStateView } from "../../../aimongus_types/bindings/ExtractClientState";
+import {
+  BASE_BUTTON_CLASSNAME,
+  PINK_BUTTON,
+  TEAL_BUTTON,
+} from "../../../lib/common-classes";
+import { GameStateProps } from "../../../pages/game";
+import { Col } from "../../layout/col";
+import { Row } from "../../layout/row";
 import useNotification from "../../notification/useNotification";
 
 export default function FindingPlayers(props: GameStateProps<"Lobby">) {
@@ -68,7 +63,7 @@ function RoomCodeButton(props: { game: MyClientGameStateView<"Lobby"> }) {
   const { setNotification } = useNotification();
   return (
     <button
-      className={clsx(VIOLET_BUTTON, BASE_BUTTON_CLASSNAME)}
+      className={clsx(PINK_BUTTON, BASE_BUTTON_CLASSNAME)}
       onClick={() => {
         navigator.clipboard.writeText(
           "http://localhost:3000/joining-game?room_id=" + game.room_code

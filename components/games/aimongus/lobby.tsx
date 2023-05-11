@@ -4,7 +4,7 @@ import Lottie from "react-lottie";
 import {
   BASE_BUTTON_CLASSNAME,
   TEAL_BUTTON,
-  VIOLET_BUTTON,
+  PINK_BUTTON,
 } from "../../../lib/common-classes";
 import searching from "../../../public/lottie/little-robot.json";
 import { Col } from "../../layout/col";
@@ -37,7 +37,7 @@ export default function Lobby() {
         />
         <Row className="gap-3">
           <button
-            className={clsx(VIOLET_BUTTON, BASE_BUTTON_CLASSNAME, "w-1/2")}
+            className={clsx(PINK_BUTTON, BASE_BUTTON_CLASSNAME, "w-1/2")}
             onClick={() => {
               console.log("joining game");
               router.push("/joining-game");

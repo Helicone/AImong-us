@@ -10,7 +10,12 @@ import { EMOJIS } from "../lib/emojis";
 import { useRouter } from "next/router";
 import { Col } from "../components/layout/col";
 import { ProfilePicker } from "../components/games/aimongus/profile-picker";
-import { INPUT_CLASSNAME } from "../lib/common-classes";
+import {
+  BASE_BUTTON_CLASSNAME,
+  INPUT_CLASSNAME,
+  PINK_BUTTON,
+} from "../lib/common-classes";
+import clsx from "clsx";
 
 export default function Home() {
   return (
@@ -76,7 +81,7 @@ export function JoiningGame() {
           </div>
         </Col>
         <button
-          className="bg-violet-600 text-white px-4 py-2 rounded-md hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-purple-500 w-full disabled:bg-slate-500 disabled:cursor-not-allowed transition-colors mt-4"
+          className={clsx(PINK_BUTTON, BASE_BUTTON_CLASSNAME, "w-full")}
           disabled={
             !roomId || roomId.length < 4 || !username || username.length < 1
           }
