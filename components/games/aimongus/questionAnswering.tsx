@@ -3,8 +3,17 @@ import { MyClientGameStateView } from "../../../aimongus_types/bindings/ExtractC
 
 import { GameStateProps } from "../../../pages/game";
 import { Timer } from "./timer";
+import { Col } from "../../layout/col";
+import {
+  BASE_BUTTON_CLASSNAME,
+  INPUT_CLASSNAME,
+  VIOLET_BUTTON,
+} from "../../../lib/common-classes";
+import clsx from "clsx";
+import { Row } from "../../layout/row";
 
 const MAX_LENGTH_ANSWER = 1200;
+const ms = 1000;
 
 export default function QuestionAnswering(props: GameStateProps<"Answering">) {
   const { game, sendMessage } = props;
@@ -18,53 +27,45 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
   }
 
   return (
-    <div className="grid grid-cols-2 w-full max-w-3xl mx-auto justify-between">
-      <div className="flex flex-col col-span-2 gap-12">
-        <div className="flex flex-col col-span-2 gap-2 text-center">
-          <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
-            <div className="max-w-lg bg-white  p-5 rounded-lg bg-">
-              {currentQuestion}
-            </div>
-          </div>
-          <div className="mt-2">
-            <textarea
-              rows={5}
-              name="answer"
-              id="answer"
-              className="pl-3 resize-none block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-0 sm:py-1.5 sm:text-md sm:leading-6"
-              placeholder="Answer"
-              value={answer}
-              onChange={(e) => {
-                if (e.target.value.length > MAX_LENGTH_ANSWER) return;
-                setAnswer(e.target.value);
-              }}
-            />
-            <p className="mt-2 text-sm text-gray-500">
-              {answer.length}/{MAX_LENGTH_ANSWER}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-col gap-10">
-          <button
-            className="bg-gray-600 text-white p-2 w-full hover:opacity-90"
-            onClick={() => {
-              sendMessage({
-                SubmitAnswer: answer,
-              });
+    <Col className="h-full justify-between">
+      <Col className="flex flex-col col-span-2 gap-6 text-left">
+        <div className="font-mono">Question {game.current_turn}</div>
+        <div className="text-2xl font-semibold">{currentQuestion}</div>
+        <Col className="gap-1">
+          <textarea
+            rows={5}
+            name="answer"
+            id="answer"
+            className={clsx(INPUT_CLASSNAME)}
+            placeholder="Answer. Try to convince people you are NOT a bot!"
+            value={answer}
+            onChange={(e) => {
+              if (e.target.value.length > MAX_LENGTH_ANSWER) return;
+              setAnswer(e.target.value);
             }}
-          >
-            Submit Answer
-          </button>
-          <div>
-            <Timer
-              totalTime={game.game_state.content.allowed_time * 1000}
-              timeStarted={new Date(
-                Number(game.game_state.content.started_at)
-              ).getTime()}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+          />
+          <Row className="w-full justify-end text-sm text-slate-500">
+            {answer.length}/{MAX_LENGTH_ANSWER}
+          </Row>
+        </Col>
+      </Col>
+      <Timer
+        totalTime={game.game_state.content.allowed_time * ms}
+        timeStarted={new Date(
+          Number(game.game_state.content.started_at)
+        ).getTime()}
+      />
+      <button
+        disabled={answer.length === 0}
+        className={clsx(VIOLET_BUTTON, BASE_BUTTON_CLASSNAME)}
+        onClick={() => {
+          sendMessage({
+            SubmitAnswer: answer,
+          });
+        }}
+      >
+        Submit Answer
+      </button>
+    </Col>
   );
 }

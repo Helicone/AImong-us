@@ -3,8 +3,10 @@ import { GameStateProps } from "../pages/game";
 
 import { useState } from "react";
 import {
+  BASE_BUTTON_CLASSNAME,
   INPUT_CLASSNAME,
-  PRIMARY_BUTTON_CLASSNAME,
+  TEAL_BUTTON,
+  VIOLET_BUTTON,
 } from "../lib/common-classes";
 import { Col } from "./layout/col";
 import { Row } from "./layout/row";
@@ -52,7 +54,7 @@ export function Chat(props: GameStateProps<any>) {
           }}
         />
         <button
-          className={PRIMARY_BUTTON_CLASSNAME}
+          className={clsx(VIOLET_BUTTON, BASE_BUTTON_CLASSNAME)}
           onClick={() => {
             props.sendMessage({
               SendChat: message,

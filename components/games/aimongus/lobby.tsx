@@ -1,11 +1,11 @@
 import clsx from "clsx";
 import { useRouter } from "next/router";
-import { useState } from "react";
 import Lottie from "react-lottie";
-import { PRIMARY_BUTTON_CLASSNAME } from "../../../lib/common-classes";
-import { PLAYER_NAMES } from "../../../lib/constants";
-import { EMOJIS } from "../../../lib/emojis";
-import { useLocalStorage } from "../../../lib/hooks/useLocalStorage";
+import {
+  BASE_BUTTON_CLASSNAME,
+  TEAL_BUTTON,
+  VIOLET_BUTTON,
+} from "../../../lib/common-classes";
 import searching from "../../../public/lottie/little-robot.json";
 import { Col } from "../../layout/col";
 import { Row } from "../../layout/row";
@@ -37,7 +37,7 @@ export default function Lobby() {
         />
         <Row className="gap-3">
           <button
-            className={clsx(PRIMARY_BUTTON_CLASSNAME, "w-1/2")}
+            className={clsx(VIOLET_BUTTON, BASE_BUTTON_CLASSNAME, "w-1/2")}
             onClick={() => {
               console.log("joining game");
               router.push("/joining-game");
@@ -46,7 +46,7 @@ export default function Lobby() {
             Join Game
           </button>
           <button
-            className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-500 w-1/2"
+            className={clsx(TEAL_BUTTON, BASE_BUTTON_CLASSNAME, "w-1/2")}
             onClick={() => {
               console.log("creating game");
               router.push("/creating-game");

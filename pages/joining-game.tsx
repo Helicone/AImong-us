@@ -3,7 +3,7 @@ import { MainWrapper } from "../components/mainWrapper";
 
 import Lobby from "../components/games/aimongus/lobby";
 import StarBackground from "../components/games/aimongus/star";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocalStorage } from "../lib/hooks/useLocalStorage";
 import { PLAYER_NAMES } from "../lib/constants";
 import { EMOJIS } from "../lib/emojis";
@@ -29,7 +29,6 @@ export default function Home() {
 }
 
 export function JoiningGame() {
-  const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useLocalStorage<string>(
     "user_name",
     "",
@@ -38,6 +37,13 @@ export function JoiningGame() {
     }
   );
   const router = useRouter();
+  const roomIdFromUrl = router.query.room_id as string;
+  const [roomId, setRoomId] = useState(roomIdFromUrl ?? "");
+  useEffect(() => {
+    if (roomIdFromUrl) {
+      setRoomId(roomIdFromUrl);
+    }
+  }, [roomIdFromUrl]);
   const [selectedEmoji, setSelectedEmoji] = useLocalStorage<string | null>(
     "user_emoji",
     null,
