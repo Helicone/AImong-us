@@ -49,7 +49,10 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
       <Col className="relative">
         <button
           disabled={answer.length === 0}
-          className={clsx(PINK_BUTTON, BASE_BUTTON_CLASSNAME)}
+          className={clsx(
+            "bg-pink-600 hover:bg-pink-500",
+            BASE_BUTTON_CLASSNAME
+          )}
           onClick={() => {
             sendMessage({
               SubmitAnswer: answer,
