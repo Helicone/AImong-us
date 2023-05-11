@@ -125,10 +125,8 @@ async fn respond_in_chat(
             messages: vec![ChatMessage {
                 role: "system".to_string(),
                 content: format!(
-                    r#""
-I am creating a game called AIMongUs, it is a pun on among.us. 
-
-This game will behave similar to Jaxbox's game Fibbage. 
+                    r#"
+I am creating a game called AIMongUs, it is a pun on among us. 
 
 2-8 players enter the game and a secret bot is among the players.
 
@@ -137,8 +135,11 @@ There are three rounds to the game, where each player is given a question and is
 Here is the current game state:
 {:?}
 
-Given the following messages:
+Here are all the players:
 {:?}
+
+Given the following messages:
+{}
 
 Give a funny response that kind of makes fun of the game or players.
 
@@ -146,10 +147,11 @@ They know you are the bot when you are sending this message.
 Please keep your response short and sassy.
 Keep it PG-13, and keep your responses under 100 characters.
 
-(Bot): "
+Please give me a response for the bot to say
 "#,
                     message.game_state,
-                message.messages.iter().map(|x| format!("{:?}: {:?}", 
+                    message.players,
+                message.messages.iter().map(|x| format!("{}: {}",
                     message
                         .players
                         .iter()
@@ -159,7 +161,7 @@ Keep it PG-13, and keep your responses under 100 characters.
                     x.message
                     )
                 )
-                .collect::<Vec<String>>().join("\n")
+                .collect::<Vec<String>>().join("\n").to_string().replace("\"", "")
                 ),
             }],
             temperature: 1.0,
