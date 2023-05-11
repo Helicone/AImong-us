@@ -138,7 +138,7 @@ Here is the current game state:
 Here are all the players:
 {:?}
 
-Given the following messages:
+You have been chatting already, here is the history:
 {}
 
 Give a funny response that kind of makes fun of the game or players.
@@ -148,6 +148,7 @@ Please keep your response short and sassy.
 Keep it PG-13, and keep your responses under 100 characters.
 
 Please give me a response for the bot to say give the messages above.
+What would be the next message that alex (the bot) would say?
 "#,
                     message.game_state,
                     message.players,
@@ -156,7 +157,7 @@ Please give me a response for the bot to say give the messages above.
                         .players
                         .iter()
                         .find(|p| p.random_unique_id == x.sender)
-                        .map(|p| if p.random_unique_id == message.me { "(YOU)".to_string() } else { p.username.clone() })
+                        .map(|p| if p.random_unique_id == message.me { "alex".to_string() } else { p.username.clone() })
                         .unwrap_or("unknown".to_string()),
                     x.message
                     )

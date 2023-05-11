@@ -9,6 +9,7 @@ import { GameStateProps } from "../../../pages/game";
 import { Col } from "../../layout/col";
 import { Row } from "../../layout/row";
 import useNotification from "../../notification/useNotification";
+import { useRouter } from "next/router";
 
 export default function FindingPlayers(props: GameStateProps<"Lobby">) {
   const { game, sendMessage } = props;
@@ -69,12 +70,13 @@ export default function FindingPlayers(props: GameStateProps<"Lobby">) {
 function RoomCodeButton(props: { game: MyClientGameStateView<"Lobby"> }) {
   const { game } = props;
   const { setNotification } = useNotification();
+
   return (
     <button
       className={clsx(PINK_BUTTON, BASE_BUTTON_CLASSNAME)}
       onClick={() => {
         navigator.clipboard.writeText(
-          "http://localhost:3000/joining-game?room_id=" + game.room_code
+          `${window.location.origin}/joining-game?room_id=${game.room_code}`
         );
         setNotification({
           title: "Copied to clipboard",
