@@ -12,49 +12,57 @@ import useNotification from "../../notification/useNotification";
 
 export default function FindingPlayers(props: GameStateProps<"Lobby">) {
   const { game, sendMessage } = props;
+  const { setNotification } = useNotification();
 
   return (
-    <Wrapper {...props}>
-      <Col className="h-full items-center gap-6 relative justify-between">
-        <Col className="h-full w-full gap-6">
-          {game && (
-            <Row className={"w-full justify-end"}>
-              <RoomCodeButton game={game} />
-            </Row>
-          )}
-          <div className="text-xl text-center">Waiting on players...</div>
-          <Row className="gap-4 justify-center flex-wrap overflow-y-auto">
-            {game &&
-              game.players.length > 0 &&
-              game.players.map((player) => (
-                <Col
-                  key={player.random_unique_id}
-                  className="text-center gap-1"
-                >
-                  <Col className="h-20 w-20 items-center justify-center text-6xl rounded-full bg-gradient-to-bl bg-gradient from-slate-600 to-slate-400 ">
-                    {player.emoji}
-                  </Col>
-                  <div>{player.username}</div>
-                </Col>
-              ))}
+    <Col className="h-full items-center gap-6 relative justify-between">
+      <Col className="h-full w-full gap-6">
+        {game && (
+          <Row className={"w-full justify-end"}>
+            <RoomCodeButton game={game} />
           </Row>
-        </Col>
-        {game.game_state.content.is_host && (
-          <button
-            className={clsx(
-              TEAL_BUTTON,
-              BASE_BUTTON_CLASSNAME,
-              "w-full text-xl"
-            )}
-            onClick={() => {
-              sendMessage("StartGame");
-            }}
-          >
-            Start game
-          </button>
         )}
+        <div className="text-xl text-center">Waiting on players...</div>
+        <Row className="gap-4 justify-center flex-wrap overflow-y-auto">
+          {game &&
+            game.players.length > 0 &&
+            game.players.map((player) => (
+              <Col key={player.random_unique_id} className="text-center gap-1">
+                <Col className="h-20 w-20 items-center justify-center text-6xl rounded-full bg-gradient-to-bl bg-gradient from-slate-600 to-slate-400 ">
+                  {player.emoji}
+                </Col>
+                <div>{player.username}</div>
+              </Col>
+            ))}
+        </Row>
       </Col>
-    </Wrapper>
+      {game.game_state.content.is_host && (
+        <button
+          className={clsx(TEAL_BUTTON, BASE_BUTTON_CLASSNAME, "w-full text-xl")}
+          onClick={() => {
+            if (!game.players.find((player) => player.is_bot)) {
+              setNotification({
+                title: "No bot found",
+                description:
+                  "please contact us on discord to help resolve this issue",
+                variant: "error",
+              });
+              return;
+            }
+            if (game.players.length <= 2) {
+              setNotification({
+                title: "Not enough players",
+                variant: "error",
+              });
+            } else {
+              sendMessage("StartGame");
+            }
+          }}
+        >
+          Start game
+        </button>
+      )}
+    </Col>
   );
 }
 
@@ -80,14 +88,4 @@ function RoomCodeButton(props: { game: MyClientGameStateView<"Lobby"> }) {
       </div>
     </button>
   );
-}
-
-function Wrapper(
-  props: GameStateProps<"Lobby"> & {
-    children: React.ReactNode;
-  }
-) {
-  const { game, sendMessage } = props;
-
-  return <>{props.children}</>;
 }

@@ -84,6 +84,7 @@ pub struct Player {
     pub username: String,
     pub emoji: String,
     pub is_host: bool,
+    pub is_bot: bool,
 }
 
 #[derive(TS)]

@@ -43,7 +43,9 @@ export function ProfilePicker(props: {
         <input
           type="text"
           placeholder="Username"
-          className={ "border-2 border-transparent bg-violet-900 w-full rounded-md focus:outline-none focus:border-pink-500 px-4 py-2"}
+          className={
+            "border-2 border-transparent bg-violet-900 w-full rounded-md focus:outline-none focus:border-pink-500 px-4 py-2"
+          }
           value={username}
           onChange={(e) =>
             e.target.value.length < 10 && setUsername(e.target.value)

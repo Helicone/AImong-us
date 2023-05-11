@@ -321,6 +321,7 @@ impl From<Player> for server_to_client::Player {
             username: player.username,
             is_host: player.is_host,
             emoji: player.emoji,
+            is_bot: player.is_bot,
         }
     }
 }

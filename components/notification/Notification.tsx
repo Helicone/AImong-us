@@ -13,7 +13,7 @@ import useNotification from "./useNotification";
 import clsx from "clsx";
 
 export const Notification = () => {
-  const { variant, title } = useNotification();
+  const { variant, title, description } = useNotification();
 
   const [show, setShow] = useState(true);
 
@@ -82,6 +82,11 @@ export const Notification = () => {
                   </p>
                 </div>
               </div>
+              <p>
+                <span className="ml-3 truncate font-medium text-white text-sm flex-wrap break-words">
+                  {description}
+                </span>
+              </p>
             </div>
           </Transition>
         </div>
