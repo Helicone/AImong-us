@@ -43,7 +43,7 @@ export function ProfilePicker(props: {
         <input
           type="text"
           placeholder="Username"
-          className={INPUT_CLASSNAME}
+          className={`${INPUT_CLASSNAME}`}
           value={username}
           onChange={(e) =>
             e.target.value.length < 10 && setUsername(e.target.value)
