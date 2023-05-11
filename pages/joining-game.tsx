@@ -23,7 +23,6 @@ export default function Home() {
 
       <MainWrapper title="AImong Us">
         <JoiningGame />
-        <StarBackground />
       </MainWrapper>
     </div>
   );

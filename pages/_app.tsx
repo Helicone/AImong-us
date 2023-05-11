@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { NotificationProvider } from "../components/notification/NotificationContext";
 import { Notification } from "../components/notification/Notification";
+import StarBackground from "../components/games/aimongus/star";
 
 const queryClient = new QueryClient();
 export default function App({ Component, pageProps }: AppProps) {
@@ -16,6 +17,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <QueryClientProvider client={queryClient}>
         <NotificationProvider>
           <Notification />
+          <StarBackground />
           <Component {...pageProps} />
         </NotificationProvider>
       </QueryClientProvider>

@@ -1,5 +1,6 @@
 import { ClientGameState } from "../aimongus_types/bindings/ClientGameState";
 import { ClientGameStateView } from "../aimongus_types/bindings/ClientGameStateView";
+import StarBackground from "./games/aimongus/star";
 import { Col } from "./layout/col";
 
 interface MainWrapperProps {

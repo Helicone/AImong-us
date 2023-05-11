@@ -9,14 +9,13 @@ import { ClientGameState } from "../aimongus_types/bindings/ClientGameState";
 import { ClientGameStateView } from "../aimongus_types/bindings/ClientGameStateView";
 import { ClientResponse } from "../aimongus_types/bindings/ClientResponse";
 import { MyClientGameStateView } from "../aimongus_types/bindings/ExtractClientState";
+import { GameIslandWrapper } from "../components/GameIsland";
 import FindingPlayers from "../components/games/aimongus/findingPlayers";
 import QuestionAnswering from "../components/games/aimongus/questionAnswering";
 import Voting from "../components/games/aimongus/voting";
 import VotingResults from "../components/games/aimongus/votingResults";
 import useUser from "../lib/hooks/useUser";
 import { useWebsocket } from "../lib/hooks/useWebhook";
-import { GameIslandWrapper } from "../components/GameIsland";
-import StarBackground from "../components/games/aimongus/star";
 
 export interface GameStateProps<T extends ClientGameState["state"]> {
   game: MyClientGameStateView<T>;
@@ -51,7 +50,7 @@ function GameIsolateChannel({
       <div>
         <MainWrapper title="AImong Us" game={gameState}>
           <GameIslandWrapper game={gameState} sendMessage={sendMessage}>
-          <GameState game={gameState as any} sendMessage={sendMessage} />
+            <GameState game={gameState as any} sendMessage={sendMessage} />
           </GameIslandWrapper>
         </MainWrapper>
       </div>
@@ -100,7 +99,6 @@ export default function Home() {
         <div className="z-10">
           <Game websocketAddress={wsAddress} />
         </div>
-        <StarBackground />
       </div>
     );
   } else {

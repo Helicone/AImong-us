@@ -4,13 +4,12 @@ import { MainWrapper } from "../components/mainWrapper";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { ProfilePicker } from "../components/games/aimongus/profile-picker";
-import StarBackground from "../components/games/aimongus/star";
 import { Col } from "../components/layout/col";
+import { TinyLabel } from "../components/tinylabel";
+import { Toggle } from "../components/toggle";
 import { PLAYER_NAMES } from "../lib/constants";
 import { EMOJIS } from "../lib/emojis";
 import { useLocalStorage } from "../lib/hooks/useLocalStorage";
-import { Toggle } from "../components/toggle";
-import { TinyLabel } from "../components/tinylabel";
 
 export default function Home() {
   return (
@@ -23,7 +22,6 @@ export default function Home() {
 
       <MainWrapper title="AImong Us">
         <CreatingGame />
-        <StarBackground />
       </MainWrapper>
     </div>
   );
