@@ -30,45 +30,64 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
     <Col className="h-full gap-6">
       <div className="font-mono">Question {game.current_turn}</div>
       <div className="text-2xl font-semibold">{currentQuestion}</div>
-      <Col className="gap-1 flex-grow">
-        <textarea
-          name="answer"
-          id="answer"
-          className={clsx(INPUT_CLASSNAME, "flex flex-grow")}
-          placeholder="Answer. Try to convince people you are NOT a bot!"
-          value={answer}
-          onChange={(e) => {
-            if (e.target.value.length > MAX_LENGTH_ANSWER) return;
-            setAnswer(e.target.value);
-          }}
-        />
-        <Row className="w-full justify-end text-sm text-slate-500">
-          {answer.length}/{MAX_LENGTH_ANSWER}
-        </Row>
-      </Col>
-      <Col className="relative">
-        <button
-          disabled={answer.length === 0}
-          className={clsx(
-            "bg-pink-600 hover:bg-pink-500",
-            BASE_BUTTON_CLASSNAME
-          )}
-          onClick={() => {
-            sendMessage({
-              SubmitAnswer: answer,
-            });
-          }}
-        >
-          Submit Answer
-        </button>
-        <Timer
-          totalTime={game.game_state.content.allowed_time * ms}
-          timeStarted={new Date(
-            Number(game.game_state.content.started_at)
-          ).getTime()}
-          className={"absolute bottom-0 w-full"}
-        />
-      </Col>
+      <i className="font-light ">
+        Trick the other players into thinking you are the bot
+      </i>
+      {game.game_state.content.you_answered ? (
+        <>
+          <div className="text-2xl font-semibold">Answer captured!</div>
+          <Timer
+            totalTime={game.game_state.content.allowed_time * ms}
+            timeStarted={new Date(
+              Number(game.game_state.content.started_at)
+            ).getTime()}
+            className={"bottom-0 w-full"}
+          />
+        </>
+      ) : (
+        <>
+          <Col className="gap-1 flex-grow">
+            <textarea
+              name="answer"
+              id="answer"
+              className={clsx(INPUT_CLASSNAME, "flex flex-grow resize-none")}
+              placeholder="Answer. Try to convince people you are NOT a bot!"
+              value={answer}
+              onChange={(e) => {
+                if (e.target.value.length > MAX_LENGTH_ANSWER) return;
+                setAnswer(e.target.value);
+              }}
+            />
+
+            <Row className="w-full justify-end text-sm text-slate-500">
+              {answer.length}/{MAX_LENGTH_ANSWER}
+            </Row>
+          </Col>
+          <Col className="relative">
+            <button
+              disabled={answer.length === 0}
+              className={clsx(
+                "bg-pink-600 hover:bg-pink-500",
+                BASE_BUTTON_CLASSNAME
+              )}
+              onClick={() => {
+                sendMessage({
+                  SubmitAnswer: answer,
+                });
+              }}
+            >
+              Submit Answer
+            </button>
+            <Timer
+              totalTime={game.game_state.content.allowed_time * ms}
+              timeStarted={new Date(
+                Number(game.game_state.content.started_at)
+              ).getTime()}
+              className={"absolute bottom-0 w-full"}
+            />
+          </Col>
+        </>
+      )}
     </Col>
   );
 }

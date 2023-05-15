@@ -17,7 +17,9 @@ export function MainWrapper(props: MainWrapperProps) {
     <main className="w-screen h-screen bg-black">
       <div className="z-10 text-white">
         <h1 className="text-center w-full py-2 px-5 z-10 bg-violet-950">
-          <div className="text-center w-full text-md font-mono">AImong.us</div>
+          <div className="text-center w-full text-md font-mono">
+            AImong.us (alpha)
+          </div>
         </h1>
         <Col className="grow p-2 sm:px-6 sm:py-4 z-10">{children}</Col>
       </div>

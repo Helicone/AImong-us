@@ -19,28 +19,34 @@ export default function Voting(props: GameStateProps<"Voting">) {
         <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
           <div className="max-w-lg p-5 rounded-lg bg-">{currentQuestion}</div>
         </div>
-        <div className="flex flex-col max-w-md gap-10">
-          {Object.entries(game.game_state.content.answers).map(
-            ([sessionId, answer]) => (
-              <AnswerCard
-                answer={answer}
-                onClick={() => {
-                  if (!answer.is_me) {
-                    sendMessage({
-                      SubmitVote: {
-                        answer_id: answer.answer_id,
-                      },
-                    });
-                  } else {
-                    console.log("You can't vote for yourself!");
-                  }
-                }}
-                room_code={game.room_code}
-                key={answer.answer_id}
-              />
-            )
-          )}
-        </div>
+        {game.game_state.content.you_voted ? (
+          <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
+            You voted!
+          </div>
+        ) : (
+          <div className="flex flex-col max-w-md gap-10">
+            {Object.entries(game.game_state.content.answers).map(
+              ([sessionId, answer]) => (
+                <AnswerCard
+                  answer={answer}
+                  onClick={() => {
+                    if (!answer.is_me) {
+                      sendMessage({
+                        SubmitVote: {
+                          answer_id: answer.answer_id,
+                        },
+                      });
+                    } else {
+                      console.log("You can't vote for yourself!");
+                    }
+                  }}
+                  room_code={game.room_code}
+                  key={answer.answer_id}
+                />
+              )
+            )}
+          </div>
+        )}
       </div>
       <div>
         <Timer

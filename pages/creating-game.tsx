@@ -46,6 +46,7 @@ export function CreatingGame() {
       setStored(randomEmoji);
     }
   );
+  const [isPublic, setIsPublic] = useState(false);
 
   return (
     <Col className="items-center w-full z-10">
@@ -58,7 +59,11 @@ export function CreatingGame() {
           setUsername={setUsername}
         />
         <Col className="gap-1 text-left">
-          <Toggle onChange={() => {}} />
+          <Toggle
+            onChange={(isToggled) => {
+              setIsPublic(isToggled);
+            }}
+          />
           <TinyLabel text="Public" />
         </Col>
 
@@ -67,7 +72,9 @@ export function CreatingGame() {
           onClick={() => {
             console.log("play AImong Us");
             router.push(
-              `/game?get_new_game=true&username=${username}&emoji=${selectedEmoji}`
+              `/game?get_new_game=true&username=${username}&is_public=${
+                isPublic ? "true" : "false"
+              }&emoji=${selectedEmoji?.trim()}`
             );
           }}
         >

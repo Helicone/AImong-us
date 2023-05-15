@@ -89,7 +89,7 @@ export default function Home() {
 
   const wsAddress =
     router.query.get_new_game == "true"
-      ? `${baseUrl}/create-room?identity=${user}&username=${router.query.username}&emoji=${router.query.emoji}`
+      ? `${baseUrl}/create-room?identity=${user}&username=${router.query.username}&emoji=${router.query.emoji}&is_public=${router.query.is_public}`
       : router.query.room_id
       ? `${baseUrl}/join-room?identity=${user}&room=${router.query.room_id}&username=${router.query.username}&emoji=${router.query.emoji}`
       : undefined;

@@ -6,7 +6,9 @@ edition = "2021"
 [dependencies]
 aimongus_types = { path = "../aimongus_types", features = ["server"] }
 openai = { path = "../openai" }
-rocket = { package = "rocket", git = "https://github.com/SergioBenitez/Rocket.git", rev = "a82508b403420bd941c32ddec3ee3e4875f2b8a5" }
+rocket = { package = "rocket", git = "https://github.com/SergioBenitez/Rocket.git", rev = "a82508b403420bd941c32ddec3ee3e4875f2b8a5", features = [
+    "json",
+] }
 ws = { package = "rocket_ws", git = "https://github.com/SergioBenitez/Rocket.git", rev = "a82508b403420bd941c32ddec3ee3e4875f2b8a5" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

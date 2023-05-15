@@ -39,7 +39,7 @@ export function AnswerCard(props: AnswerProps) {
       </div>
       <div className="absolute -bottom-5 right-0 flex flex-row gap-2">
         {}
-        {Array(answer.number_of_votes)
+        {/* {Array(answer.number_of_votes)
           .fill(0)
           .map((vote, i) => (
             <div
@@ -48,7 +48,7 @@ export function AnswerCard(props: AnswerProps) {
             >
               <div className="text-xl h-7">🪓</div>
             </div>
-          ))}
+          ))} */}
       </div>
     </div>
   );
@@ -70,8 +70,7 @@ export function AnswerCardResult(props: AnswerPropsResult) {
 
   const percentagePoints = Math.round((player.score / (maxPoints ?? 0)) * 100);
   const totalPointsThisRound =
-    (points?.guessing_the_bot ?? 0) +
-    (points?.not_thinking_you_are_the_bot ?? 0);
+    (points?.guessing_the_bot ?? 0) + (points?.tricking_players ?? 0);
 
   return (
     <Grid className="grid-cols-6">
@@ -79,6 +78,7 @@ export function AnswerCardResult(props: AnswerPropsResult) {
         <Col className="text-xl rounded-full h-9 w-9 bg-blue-500 justify-center items-center">
           {emoji}
         </Col>
+        {!isBot && <i className="text-xs text-gray-500">{player.score} pts</i>}
       </Col>
       <Col className="w-full col-span-5">
         <div className="text-xs text-slate-400">{player.username}</div>
@@ -86,12 +86,32 @@ export function AnswerCardResult(props: AnswerPropsResult) {
           {props.answer.answer}
 
           {!isBot && (
-            <div
-              className=" absolute -top-6
-             z-10 right-0 text-lg text-green-700 font-bold bg-green-300 opacity-70 px-2 py-1 rounded-full"
-            >
-              +{totalPointsThisRound}
-            </div>
+            <Row className="absolute -top-6 z-10 right-0 gap-2">
+              {(points?.guessing_the_bot ?? 0) > 0 && (
+                <div className="bg-green-300 opacity-70 px-3 py-1 rounded-full">
+                  <Col className="justify-center">
+                    <div className="text-lg text-green-700 font-bold">
+                      +{points?.guessing_the_bot}
+                    </div>
+                    <i className={`text-xs text-gray-500 font-light`}>
+                      Bot detected
+                    </i>
+                  </Col>
+                </div>
+              )}
+              {(points?.tricking_players ?? 0) > 0 && (
+                <div className="bg-green-300 opacity-70 px-3 py-1 rounded-full">
+                  <Col>
+                    <div className="text-lg text-green-700 font-bold">
+                      +{points?.tricking_players}
+                    </div>
+                    <i className={`text-xs text-gray-500 font-light`}>
+                      Trickster
+                    </i>
+                  </Col>
+                </div>
+              )}
+            </Row>
           )}
 
           <div className="absolute -bottom-6 z-10 right-0">
