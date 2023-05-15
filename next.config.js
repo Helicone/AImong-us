@@ -10,6 +10,10 @@ const nextConfig = {
           process.env.NEXT_PUBLIC_API_BASE_URL_HTTPS ?? "http://127.0.0.1:8000"
         }/:path*`,
       },
+      {
+        source: "/ingest/:path*",
+        destination: "https://app.posthog.com/:path*",
+      },
     ];
   },
 };
