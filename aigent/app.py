@@ -12,7 +12,7 @@ async def run_cargo(room_id: str, aicode: str):
     binary_path = "target/release/aigent"  
     
     # Timeout after 
-    cmd = f"timeout 60000 {binary_path} {room_id} {aicode}"
+    cmd = f"timeout 1d {binary_path} {room_id} {aicode}"
     subprocess.Popen(cmd, shell=True)
     return {"message": "Process started", "room_id": room_id, "aicode": aicode}
 

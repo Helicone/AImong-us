@@ -37,6 +37,7 @@ pub enum ClientGameState {
         question: String,
         answers: HashMap<SessionId, Answer>,
         allowed_time: u32,
+        you_voted: bool,
     },
     Reviewing {
         is_game_over: bool,
@@ -62,7 +63,7 @@ pub struct VoteResult {
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
 pub struct Points {
     pub guessing_the_bot: u32,
-    pub not_thinking_you_are_the_bot: u32,
+    pub tricking_players: u32,
 }
 
 #[derive(TS)]
@@ -107,4 +108,12 @@ pub struct ChatMessage {
     pub sender: SessionId,
     pub time_sent: u128,
     pub message: String,
+}
+
+#[derive(TS)]
+#[ts(export)]
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct PublicRoom {
+    pub room_code: String,
+    pub number_of_players: u8,
 }

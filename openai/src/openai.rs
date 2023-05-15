@@ -1,7 +1,6 @@
-
 use std::env;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatMessage {
@@ -41,14 +40,26 @@ pub struct ApiRequest {
     pub max_tokens: i32,
 }
 
-
 pub async fn call_openai(request: ApiRequest) -> Result<ApiResponse, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
+    println!(
+        "Helicone auth: {}",
+        env::var("HELICONE_AUTH").unwrap_or("".to_string())
+    );
     let resp = client
         .post("https://oai.hconeai.com/v1/chat/completions")
         .bearer_auth(env::var("OPENAI_API_KEY").unwrap())
         .header("Content-Type", "application/json")
         .header("OpenAI-Organization", "")
+        .header("Helicone-Cache-Enabled", "true")
+        .header("Helicone-Cache-Bucket-Max-Size", 20)
+        .header(
+            "Helicone-Auth",
+            format!(
+                "Bearer {}",
+                env::var("HELICONE_AUTH").unwrap_or("".to_string())
+            ),
+        )
         .body(serde_json::to_string(&request).unwrap())
         .send();
 

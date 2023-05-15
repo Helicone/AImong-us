@@ -16,6 +16,9 @@ import {
   PINK_BUTTON,
 } from "../lib/common-classes";
 import clsx from "clsx";
+import { useQuery } from "@tanstack/react-query";
+import { PublicRoom } from "../aimongus_types/bindings/PublicRoom";
+import { Row } from "../components/layout/row";
 
 export default function Home() {
   return (
@@ -58,6 +61,14 @@ export function JoiningGame() {
     }
   );
 
+  const publicRooms = useQuery({
+    queryKey: ["room", roomId],
+    queryFn: async () => {
+      const res = await fetch(`backstab/public-rooms`);
+      return res.json() as Promise<PublicRoom[]>;
+    },
+  });
+
   return (
     <Col className="items-center w-full z-10">
       <Col className=" max-w-lg w-full gap-4 text-center mt-20 p-8 rounded-lg shadow-lg  text-white bg-violet-950">
@@ -99,6 +110,48 @@ export function JoiningGame() {
         >
           Join Game
         </button>
+      </Col>
+      <Col className="text-center mt-4 bg-violet-950 p-4 rounded-lg shadow-lg text-white max-w-lg w-full">
+        <h1 className="text-xl text-white mb-4">Public rooms</h1>
+        <Col
+          className="gap-2 overflow-x-auto"
+          style={{ maxHeight: "calc(100vh - 400px)" }}
+        >
+          {publicRooms.data?.map((room) => (
+            <Row
+              key={room.room_code}
+              className="flex items-center justify-between p-2 rounded-lg bg-violet-900"
+            >
+              <button
+                className={clsx(
+                  PINK_BUTTON,
+                  BASE_BUTTON_CLASSNAME,
+                  " max-w-sm text-left"
+                )}
+                onClick={() => {
+                  console.log("play AImong Us");
+                  router.push(
+                    "/game?room_id=" +
+                      room.room_code +
+                      "&username=" +
+                      username +
+                      "&emoji=" +
+                      selectedEmoji
+                  );
+                }}
+              >
+                Join
+              </button>
+
+              <div className="flex items-center gap-2">
+                <div className="text-md">{room.room_code}</div>
+              </div>
+              <div className="">
+                {room.number_of_players} {" Players"}
+              </div>
+            </Row>
+          ))}
+        </Col>
       </Col>
     </Col>
   );
