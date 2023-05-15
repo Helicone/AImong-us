@@ -609,7 +609,7 @@ fn public_rooms(sessions: &State<SessionsMap>) -> Json<Vec<PublicRoom>> {
             .values()
             .filter_map(|s| s.try_lock().ok())
             .filter(|s| s.is_public)
-            .filter(|s| s.turns.is_empty())
+            .filter(|s| !s.turns.is_empty())
             .filter(|s| {
                 s.created_at
                     .elapsed()
