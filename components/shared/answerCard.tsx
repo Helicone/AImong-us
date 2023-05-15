@@ -19,7 +19,7 @@ export function AnswerCard(props: AnswerProps) {
     <div className="relative">
       <div
         className={clsx(
-          `flex flex-col items-center justify-center w-full  p-5 border rounded-xl d`,
+          `flex flex-col items-center justify-center w-full  p-5 border rounded-xl`,
           canClick
             ? "cursor-pointer hover:bg-violet-700 shadow-sm"
             : "bg-violet-800"
@@ -28,7 +28,7 @@ export function AnswerCard(props: AnswerProps) {
       >
         <div className="flex flex-row justify-between w-full items-center">
           <div className="flex flex-col items-start">
-            <div className="text-xl">{props.answer.answer}</div>
+            <div className="text">{props.answer.answer}</div>
             <div className="text-sm">
               {/* {avatar.name} */}
               {answer.is_me ? " (You)" : ""}

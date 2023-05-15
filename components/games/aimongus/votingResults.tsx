@@ -63,7 +63,7 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
   const winner = game.players.find((player) => player.score === maxPoints);
 
   return (
-    <Col className=" gap-5 justify-between h-full">
+    <Col className=" gap-2 justify-between h-full">
       <div>
         {game.game_state.content.is_game_over ? (
           <div className="text-2xl font-semibold font-mono w-full flex flex-col items-center text-center">
@@ -80,11 +80,11 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
           </div>
         )}
       </div>
-      <div className="text-xl font-semibold font-mono w-full flex flex-col items-center text-center">
-        <div className="max-w-lg   p-5 rounded-lg bg-">{currentQuestion}</div>
+      <div className="text-lg font-semibold font-mono w-full flex flex-col items-center text-center">
+        <div className="max-w-lg p-5 rounded-lg">{currentQuestion}</div>
       </div>
 
-      <Col className="gap-16">
+      <Col className="flex-1 gap-5 overflow-auto">
         <AnswerCardResult
           answer={botResult.answer}
           isBot
