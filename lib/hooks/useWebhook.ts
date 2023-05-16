@@ -1,41 +1,43 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 
-type MessageHandler = (message: string) => void;
+export const useWebsocket = (url: string | null) => {
+  const [response, setResponse] = useState("");
+  const webhook = useQuery({
+    queryKey: ["webhook", url],
+    queryFn: async () => {
+      console.log("Creating new websocket");
+      if (!url) {
+        return Promise.resolve(null);
+      }
 
-export const useWebsocket = (
-  url: string,
-  onMessageReceived: MessageHandler
-) => {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
+      const socket = new WebSocket(url);
 
-  useEffect(() => {
-    const newSocket = new WebSocket(url);
+      socket.onopen = () => {
+        console.log("WebSocket connection established");
+      };
 
-    newSocket.onopen = () => {
-      console.log("WebSocket connection established");
-    };
+      socket.onmessage = (event) => {
+        console.log(`Received message: ${event.data}`);
+        setResponse(event.data);
+      };
 
-    newSocket.onmessage = (event) => {
-      console.log(`Received message: ${event.data}`);
-      onMessageReceived(event.data);
-    };
+      socket.onclose = () => {
+        console.log("WebSocket connection closed");
+      };
+      console.log("Setting socket", socket);
 
-    newSocket.onclose = () => {
-      console.log("WebSocket connection closed");
-    };
-
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.close();
-    };
-  }, [url, onMessageReceived]);
+      return {
+        socket,
+      };
+    },
+  });
 
   const sendMessage = (message: string) => {
-    if (socket) {
-      socket.send(message);
+    if (webhook.data?.socket) {
+      webhook.data.socket.send(message);
     }
   };
 
-  return { sendMessage };
+  return { sendMessage, response };
 };

@@ -68,8 +68,7 @@ function GameIsolateChannel({
 }
 
 function Game({ websocketAddress }: { websocketAddress: string }) {
-  const [response, setResponse] = useState("");
-  const { sendMessage } = useWebsocket(websocketAddress, setResponse);
+  const { sendMessage, response } = useWebsocket(websocketAddress);
   return (
     <GameIsolateChannel
       sendMessage={(e) => sendMessage(JSON.stringify(e))}
