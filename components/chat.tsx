@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { GameStateProps } from "../pages/game";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BASE_BUTTON_CLASSNAME,
   INPUT_CLASSNAME,
@@ -14,12 +14,23 @@ export function Chat(props: GameStateProps<any>) {
   const [message, setMessage] = useState("");
   const [isShifted, setIsShifted] = useState(false);
   const msgs = props.game.messages;
+  const chatContainerRef = useRef<
+    HTMLDivElement & { scrollTop: number; scrollHeight: number }
+  >(null);
+  useEffect(() => {
+    // Scroll to bottom whenever messages are updated
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [msgs]);
+
   function getPlayer(id: number) {
     return props.game.players.find((player) => player.random_unique_id === id);
   }
   return (
     <Col className="justify-end p-4 h-[70vh] w-80 bg-violet-950 rounded-2xl ">
-      <Col className="gap-1 h-full overflow-auto pb-10">
+      <Col ref={chatContainerRef} className="gap-1 h-full overflow-auto pb-10">
         {msgs.map((msg, i) => {
           const player = getPlayer(msg.sender);
           if (player?.random_unique_id === props.game.me) {

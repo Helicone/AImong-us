@@ -31,6 +31,9 @@ export const useWebsocket = (url: string | null) => {
         socket,
       };
     },
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
   });
 
   const sendMessage = (message: string) => {

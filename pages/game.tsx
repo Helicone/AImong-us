@@ -5,17 +5,18 @@ import { MainWrapper } from "../components/mainWrapper";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
+import React from "react";
 import { ClientGameState } from "../aimongus_types/bindings/ClientGameState";
 import { ClientGameStateView } from "../aimongus_types/bindings/ClientGameStateView";
 import { ClientResponse } from "../aimongus_types/bindings/ClientResponse";
 import { MyClientGameStateView } from "../aimongus_types/bindings/ExtractClientState";
 import { GameIslandWrapper } from "../components/GameIsland";
+import FindingPlayers from "../components/games/aimongus/findingPlayers";
 import QuestionAnswering from "../components/games/aimongus/questionAnswering";
 import Voting from "../components/games/aimongus/voting";
 import VotingResults from "../components/games/aimongus/votingResults";
 import useUser from "../lib/hooks/useUser";
 import { useWebsocket } from "../lib/hooks/useWebhook";
-import FindingPlayers from "../components/games/aimongus/findingPlayers";
 
 export interface GameStateProps<T extends ClientGameState["state"]> {
   game: MyClientGameStateView<T>;
@@ -31,14 +32,12 @@ function GameIsolateChannel({
   try {
     const gameState: ClientGameStateView = JSON.parse(response);
     const stateMap: {
-      [K in ClientGameState["state"]]: (
-        props: GameStateProps<K>
-      ) => JSX.Element;
+      [K in ClientGameState["state"]]: React.ComponentType<GameStateProps<K>>;
     } = {
-      Lobby: (props) => <FindingPlayers {...props} />,
-      Answering: (props) => <QuestionAnswering {...props} />,
-      Voting: (props) => <Voting {...props} />,
-      Reviewing: (props) => <VotingResults {...props} />,
+      Lobby: FindingPlayers,
+      Answering: QuestionAnswering,
+      Voting: Voting,
+      Reviewing: VotingResults,
     };
 
     const GameState = stateMap[gameState.game_state.state];
