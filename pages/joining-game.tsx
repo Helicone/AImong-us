@@ -85,7 +85,7 @@ export function JoiningGame() {
             placeholder="Game ID"
             className={INPUT_CLASSNAME}
             value={roomId}
-            onChange={(e) => setRoomId(e.target.value)}
+            onChange={(e) => setRoomId(e.target.value.toUpperCase())}
           />
           <div className="text-xs text-slate-300 select-none text-left">
             Game ID
