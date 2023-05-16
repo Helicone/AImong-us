@@ -21,7 +21,6 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
   const [answer, setAnswer] = useState<string>("");
 
   const currentQuestion = game.game_state.content.question;
-  console.log("game", game);
   if (!currentQuestion) {
     return <div>Game not found</div>;
   }

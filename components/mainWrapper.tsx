@@ -19,7 +19,7 @@ export function MainWrapper(props: MainWrapperProps) {
   return (
     <main className="w-screen h-screen bg-black">
       <div className="z-10 text-white">
-        <div className="w-full bg-violet-950">
+        <Col className="w-full bg-violet-950 items-center">
           <Row className="w-full justify-between  z-10 max-w-2xl">
             <div></div>
             <h1
@@ -43,7 +43,7 @@ export function MainWrapper(props: MainWrapperProps) {
               /> */}
             </Row>
           </Row>
-        </div>
+        </Col>
         <Col className="grow p-2 sm:px-6 sm:py-4 z-10">{children}</Col>
       </div>
     </main>
