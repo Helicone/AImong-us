@@ -44,6 +44,7 @@ export function Chat(props: GameStateProps<any>) {
             );
           }
           const isNextSame = msgs[i + 1]?.sender === msg.sender;
+          const isLastSame = msgs[i - 1]?.sender === msg.sender;
           return (
             <Row className="items-center gap-2" key={i}>
               <Col className="h-full justify-end">
@@ -58,15 +59,14 @@ export function Chat(props: GameStateProps<any>) {
                 )}
               </Col>
               <Col className="gap-1">
-                <div className="bg-slate-700 rounded-lg rounded-bl-none py-2 px-4">
-                  {msg.message}
-                </div>
-                {!isNextSame && (
+                {!isLastSame && (
                   <div className="text-xs text-slate-400">
-                    {" "}
                     {player?.username}
                   </div>
                 )}
+                <div className="bg-slate-700 rounded-lg rounded-bl-none py-2 px-4">
+                  {msg.message}
+                </div>
               </Col>
             </Row>
           );

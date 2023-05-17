@@ -86,20 +86,20 @@ export function AnswerCardResult(props: AnswerPropsResult) {
           {props.answer.answer}
 
           {!isBot && (
-            <Row className="absolute -top-6 z-10 right-0 gap-2">
+            <Row className="absolute -top-3 z-10 right-0 gap-2">
               {(points?.guessing_the_bot ?? 0) > 0 && (
                 <div className="bg-green-300 opacity-70 px-3 py-1 rounded-full">
-                  <Col className="justify-center">
-                    <div className="text-lg text-green-700 font-bold">
+                  <Row className="justify-center gap-3">
+                    <div className="text-xs text-green-700 font-bold">
                       +{points?.guessing_the_bot}
                     </div>
                     <i className={`text-xs text-gray-500 font-light`}>
                       Bot detected
                     </i>
-                  </Col>
+                  </Row>
                 </div>
               )}
-              {(points?.tricking_players ?? 0) > 0 && (
+              {/* {(points?.tricking_players ?? 0) > 0 && (
                 <div className="bg-green-300 opacity-70 px-3 py-1 rounded-full">
                   <Col>
                     <div className="text-lg text-green-700 font-bold">
@@ -110,20 +110,19 @@ export function AnswerCardResult(props: AnswerPropsResult) {
                     </i>
                   </Col>
                 </div>
-              )}
+              )} */}
             </Row>
           )}
-
-          <div className="absolute -bottom-6 z-10 right-0">
-            {playersWhoVoted?.map((player, i) => (
-              <div
-                className={`opacity-60 flex flex-row w-10 h-10 items-center justify-center bg-red-900 p rounded-full shadow-md text-xl`}
-                key={i}
-              >
-                {player.emoji}
-              </div>
-            ))}
-          </div>
+          {!isBot && playersWhoVoted && playersWhoVoted.length > 0 && (
+            <div className="absolute -bottom-3 z-10 right-0">
+              <Row className="bg-green-700 rounded-full text-xs px-2 py-1 gap-2">
+                + {points?.tricking_players ?? 0} Tricked
+                {playersWhoVoted?.map((player, i) => (
+                  <div key={i}>{player.emoji}</div>
+                ))}
+              </Row>
+            </div>
+          )}
         </div>
       </Col>
     </Grid>
