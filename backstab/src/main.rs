@@ -246,7 +246,6 @@ enum GameStage {
     Answering,
     Voting,
     Reviewing,
-    GameOver,
 }
 
 #[derive(Clone, Debug)]
@@ -332,6 +331,15 @@ impl From<Player> for server_to_client::Player {
 }
 
 impl Session {
+    fn reset_session(&mut self) {
+        self.turns = vec![];
+        self.stage = GameStage::NotStarted;
+        self.questions = vec![];
+        self.players.iter_mut().for_each(|p| {
+            p.score = 0;
+        });
+    }
+
     fn all_voted(&self) -> bool {
         self.current_turn().unwrap().votes.len() == self.players.len() - self.get_ai_players().len()
     }
@@ -491,9 +499,7 @@ impl Session {
     fn get_inner_game_state_view(&self, identity: ClientIdentity) -> ClientGameState {
         let turn = self.current_turn();
         match (&self.stage, turn) {
-            (GameStage::NotStarted, _) => ClientGameState::Lobby {
-                is_host: identity == self.creator_identity,
-            },
+            (GameStage::NotStarted, _) => ClientGameState::Lobby,
             (GameStage::Answering, Some(turn)) => ClientGameState::Answering {
                 question: turn.question.clone(),
                 started_at: turn
@@ -533,7 +539,6 @@ impl Session {
                     .map(|p| p.session_id.clone())
                     .collect(),
             },
-            (GameStage::GameOver, _) => todo!(),
             _ => panic!("Invalid game state"),
         }
     }
@@ -558,6 +563,7 @@ impl Session {
                 .iter()
                 .map(|m| server_to_client::ChatMessage::from(m.clone()))
                 .collect(),
+            is_host: identity == self.creator_identity,
         }
     }
 
@@ -894,14 +900,19 @@ async fn handle_client_message(
 
         ClientResponse::StartGame => {
             let mut locked_session = session.lock().unwrap();
-            if !matches!(locked_session.stage, GameStage::NotStarted) {
-                // TODO send an error instead of silently exiting
-                return;
-            }
             if locked_session.creator_identity != identity {
                 // TODO only creator can start game
                 return;
             }
+            if matches!(locked_session.stage, GameStage::Reviewing) {
+                locked_session.reset_session();
+            }
+
+            if !matches!(locked_session.stage, GameStage::NotStarted) {
+                // TODO send an error instead of silently exiting
+                return;
+            }
+
             locked_session.stage = GameStage::Answering;
             let turn = Turn::new(locked_session.questions.last());
             locked_session.turns.push(turn);

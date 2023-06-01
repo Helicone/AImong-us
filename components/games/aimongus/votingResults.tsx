@@ -83,7 +83,6 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
       <div className="text-lg font-semibold font-mono w-full flex flex-col items-center text-center">
         <div className="max-w-lg p-5 rounded-lg">{currentQuestion}</div>
       </div>
-
       <Col className="flex-1 gap-5 overflow-auto">
         <AnswerCardResult
           answer={botResult.answer}
@@ -116,6 +115,7 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
             />
           ))}
       </Col>
+
       {!game.game_state.content.is_game_over && (
         <div className="flex flex-col items-center w-full gap-2">
           <div>
@@ -132,6 +132,18 @@ export default function VotingResults(props: GameStateProps<"Reviewing">) {
             Ready for next turn
           </button>
         </div>
+      )}
+      {game.game_state.content.is_game_over && game.is_host && (
+        <Col className="items-center w-full gap-2">
+          <button
+            className="w-full bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded font-"
+            onClick={() => {
+              sendMessage("StartGame");
+            }}
+          >
+            New Game
+          </button>
+        </Col>
       )}
     </Col>
   );

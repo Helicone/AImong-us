@@ -37,7 +37,7 @@ export default function FindingPlayers(props: GameStateProps<"Lobby">) {
             ))}
         </Row>
       </Col>
-      {game.game_state.content.is_host && (
+      {game.is_host && (
         <button
           className={clsx(TEAL_BUTTON, BASE_BUTTON_CLASSNAME, "w-full text-xl")}
           onClick={() => {

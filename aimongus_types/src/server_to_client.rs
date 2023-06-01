@@ -16,6 +16,7 @@ pub struct ClientGameStateView {
     pub me: SessionId,
     pub room_code: String,
     pub messages: Vec<ChatMessage>,
+    pub is_host: bool,
 }
 
 #[derive(TS)]
@@ -23,9 +24,7 @@ pub struct ClientGameStateView {
 #[derive(serde::Serialize, Clone, Deserialize, Debug)]
 #[serde(tag = "state", content = "content")]
 pub enum ClientGameState {
-    Lobby {
-        is_host: bool,
-    },
+    Lobby,
     Answering {
         started_at: u64,
         question: String,
