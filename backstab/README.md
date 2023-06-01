@@ -4,7 +4,11 @@ backend for aimong.us
 
 ```
 # Make sure you run the aigent server before running this server (../aigent)
+cd ../aigent
+cargo build --release
+cd ../backstab
 
-export AIGENT_BASE_URL='https://127.0.0.1:5934'
+export OPENAI_API_KEY='sk-gaaa'
+export BACK_STAB_BASE_URL=ws://localhost:8000
 cargo run
 ```

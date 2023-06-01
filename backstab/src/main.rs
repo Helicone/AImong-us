@@ -7,6 +7,7 @@ use aimongus_types::server_to_client::{ClientGameState, ClientGameStateView, Ses
 use futures::stream::SplitSink;
 use objects::server_to_server::ServerMessage;
 use rand::Rng;
+use std::process::Command;
 
 use rocket::serde::{json::Json, Serialize};
 use rocket::{response::status::BadRequest, State};
@@ -648,16 +649,15 @@ fn create_room(
     // println!("New session created with AI code: {}", session.aikey);
 
     // Spawn bot
-    let url = env::var("AIGENT_BASE_URL").unwrap();
-    let client = reqwest::Client::new();
-    let params = [
-        ("room_id", format!("{}", session.room_code)),
-        ("aicode", format!("{}", session.aikey.0)),
-    ];
-    tokio::task::spawn(async move {
-        let response = client.get(url).query(&params).send().await;
-        println!("got response: {:?}", response);
-    });
+    Command::new("timeout")
+        .args([
+            "1d".to_owned(),
+            "../aigent/target/release/aigent".to_owned(),
+            format!("{}", session.room_code),
+            format!("{}", session.aikey.0),
+        ])
+        .spawn()
+        .expect("Unable to start aigent");
 
     let session = Arc::new(Mutex::new(session));
     sessions
