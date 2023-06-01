@@ -27,7 +27,6 @@ use tokio_tungstenite::{
 };
 
 use openai::openai::{ApiRequest, ChatMessage};
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 struct Session {
@@ -118,7 +117,7 @@ async fn respond_in_chat(
         println!("Last message was bot");
         return;
     }
-    if (random_number < chance_of_responding) {
+    if random_number < chance_of_responding {
         println!("Responding in chat");
         let api_response = openai::openai::call_openai(ApiRequest {
             model: "gpt-3.5-turbo".to_string(),
@@ -281,7 +280,6 @@ Everyone will see your answer to this question:
         } => {
             session.voting_thread_spawned.store(false, Ordering::SeqCst);
         }
-
-        _ => todo!(),
+        _ => unreachable!(),
     }
 }

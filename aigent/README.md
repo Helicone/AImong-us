@@ -1,6 +1,6 @@
 # aigent
 
-AI agent client for aimongus.com
+AI agent client for aimong.us
 
 ```
 cargo build --release
