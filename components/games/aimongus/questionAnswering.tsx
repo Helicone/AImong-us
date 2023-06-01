@@ -50,7 +50,7 @@ export default function QuestionAnswering(props: GameStateProps<"Answering">) {
               name="answer"
               id="answer"
               className={clsx(INPUT_CLASSNAME, "flex flex-grow resize-none")}
-              placeholder="Answer. Try to convince people you are NOT a bot!"
+              placeholder="Answer. Try to convince people you ARE a bot!"
               value={answer}
               onChange={(e) => {
                 if (e.target.value.length > MAX_LENGTH_ANSWER) return;
