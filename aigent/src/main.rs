@@ -10,9 +10,6 @@
 //!
 //! You can use this example together with the `server` example.
 //!
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
-use std::time::Duration;
 use std::{env, sync::Arc};
 
 use aimongus_types::client_to_server::ClientResponse;
@@ -30,13 +27,11 @@ use openai::openai::{ApiRequest, ChatMessage};
 
 #[derive(Debug)]
 struct Session {
-    voting_thread_spawned: AtomicBool,
 }
 
 impl Session {
     fn new() -> Self {
         Session {
-            voting_thread_spawned: AtomicBool::new(false),
         }
     }
 }
@@ -263,22 +258,11 @@ Everyone will see your answer to this question:
             game_state: ClientGameState::Voting { .. },
             ..
         } => {
-            if !session.voting_thread_spawned.swap(true, Ordering::SeqCst) {
-                let session_clone = Arc::clone(&session);
-
-                thread::spawn(move || {
-                    while session_clone.voting_thread_spawned.load(Ordering::SeqCst) {
-                        println!("hello");
-                        thread::sleep(Duration::from_secs(1));
-                    }
-                });
-            }
         }
         ClientGameStateView {
             game_state: ClientGameState::Reviewing { .. },
             ..
         } => {
-            session.voting_thread_spawned.store(false, Ordering::SeqCst);
         }
         _ => unreachable!(),
     }
