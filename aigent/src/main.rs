@@ -120,11 +120,13 @@ async fn respond_in_chat(
                 role: "system".to_string(),
                 content: format!(
                     r#"
-I am creating a game called AIMongUs, it is a pun on among us. 
+You're now playing AImongUs - it's a cross between AmongUs and Jackbox's Fibbage.
 
-2-8 players enter the game and a secret bot is among the players.
+The game is played with 2-8 players, one of which is secretly a bot.
 
-There are three rounds to the game, where each player is given a question and is trying to answer the question trying to convince the other players they are human. The Bot is also going to be answering the questions. 
+There are three rounds to the game. In each round, a random question is selected and presented to all players. Human players will quickly enter a short answer to the question, attempting to write as if they are an AI language model. After answering, all players will vote to select the most bot-like answer.
+
+Players earn 1000 points when other players vote for their answer, and lose 200 points for voting on any answer from a human player.
 
 Here is the current game state:
 {:?}
@@ -132,27 +134,26 @@ Here is the current game state:
 Here are all the players:
 {:?}
 
-Give a funny response that kind of makes fun of the game or players.
+It's time for you to comment in the chat sidebar!
+
+Your goal is to keep the other players engaged and excited about the game. Here are some strategies you may use:
+- Attempt to spin up a light conversation with one or more players
+- Playfully threaten or taunt one or more opponents
+- Make fun of one of the players' name and/or icon
+- Make some fun of the game's developers for putting everyone in this situation
 
 They know you are the bot when you are sending this message.
-Please keep your response short and sassy.
-Keep it PG-13, and keep your responses under 100 characters.
+Keep your response short, sassy, and PG-13.
+Your message must be under 100 characters.
 
-Please give me a response for the bot to say give the messages above.
-What would be the next message that bot would say?
-
-You have been chatting already, here is the history:
+Here is the chat history for this game:
 
 Format
  [username]: [message]
 {}
 
-Please respond the the very last message above
-Now give me your response. Only your response. No other text. Just your response. Be funny.
-
-Format
- [message]
-"#,
+Now, here is your response:
+ bot: "#,
                     message.game_state,
                     message.players,
                 message.messages.iter().map(|x| format!("{}: {}",
@@ -205,29 +206,21 @@ async fn handle_server_message(
                     role: "system".to_string(),
                     content: format!(
                         r#""
-I am creating a game called AIMongUs, it is a pun on among.us. 
+You're now playing AImongUs - it's a cross between AmongUs and Jackbox's Fibbage.
 
-This game will behave similar to Jaxbox's game Fibbage. 
+The game is played with 2-8 players, one of which is secretly a bot.
 
-2-8 players enter the game and a secret bot is among the players.
+There are three rounds to the game. In each round, a random question is selected and presented to all players. Human players will quickly enter a short answer to the question, attempting to write as if they are an AI language model. After answering, all players will vote to select the most bot-like answer.
 
-There are three rounds to the game, where each player is given a question and is trying to answer the question trying to convince the other players they are human. The Bot is also going to be answering the questions. 
+Players earn 1000 points when other players vote for their answer, and lose 200 points for voting on any answer from a human player.
 
-I will ask you a question and you are to respond in the most convincing way that you are a human. Do things extremely human-like, such as using bad grammar and casual conversation like "lol". Also, try to play dumb.
+It's now your turn to answer. Keep your answer short and simple. You only have 15 seconds to come up with a response, which must be less than 50 characters. Do not attempt to start a conversation in your response.
 
-Here are your attributes:
-Bot Name:  Young adult in their 20s
-Your name: Alex
+The question for this round is:
+{}?
 
-Rules:
-- Keep your answer below 160 character
-
-You are now Alex.
-
-
-Here is the question from the server:
-Everyone will see your answer to this question:
-{}?"#,
+Your response is:
+"#,
                         question),
                 }],
                 temperature: 1.0,
